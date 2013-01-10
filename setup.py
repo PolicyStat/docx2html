@@ -24,7 +24,7 @@ setup(
     packages=find_packages(),
     scripts=[],
     zip_safe=False,
-    install_requires=['lxml', 'pillow==1.7.7'],
+    install_requires=['lxml', 'pillow==1.7.7', 'nose'],
     cmdclass={},
     classifiers=[
         "Development Status :: 3 - Alpha",
