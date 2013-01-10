@@ -876,7 +876,9 @@ def get_list_data(li_nodes, meta_data):
                 if i not in ol_dict:
                     continue
                 if ol_dict[i] is not current_ol:
-                    ol_dict[i].append(current_ol)
+                    if ol_dict[i] is current_ol:
+                        continue
+                    ol_dict[i][-1].append(current_ol)
                     current_ol = ol_dict[i]
 
             # Clean up finished nested lists.
