@@ -1,0 +1,1295 @@
+import cgi
+import os
+import subprocess
+from PIL import Image
+from lxml import etree
+from lxml.etree import XMLSyntaxError
+
+from collections import namedtuple, defaultdict
+from zipfile import ZipFile, BadZipfile
+
+DETECT_FONT_SIZE = False
+EMUS_PER_PIXEL = 9525
+# Abiword supported formats
+VALID_EXTRACT_EXTENSIONS = [
+    '.doc', '.docx', '.dotx', '.docm', '.dotm', '.wri', '.rtf', '.txt',
+    '.text', '.wpd', '.wp', '.odt', '.ott', '.abw', '.atw', '.pdf', '.html',
+    '.dot',
+]
+
+###
+# Help functions
+###
+
+
+def is_extractable(path):
+    """
+    Determine if a file is something that we can extract.
+    """
+    _, extension = os.path.splitext(path)
+    extension = extension.lower()
+    return (extension in VALID_EXTRACT_EXTENSIONS)
+
+
+def replace_ext(file_path, new_ext):
+    """
+    >>> replace_ext('one/two/three.four.doc', '.html')
+    'one/two/three.four.html'
+    >>> replace_ext('one/two/three.four.DOC', '.html')
+    'one/two/three.four.html'
+    >>> replace_ext('one/two/three.four.DOC', 'html')
+    'one/two/three.four.html'
+    """
+    if not new_ext.startswith(os.extsep):
+        new_ext = os.extsep + new_ext
+    index = file_path.rfind(os.extsep)
+    return file_path[:index] + new_ext
+
+
+def ensure_tag(tags):
+    # For some functions we can short-circuit and early exit if the tag is not
+    # the right kind.
+
+    def wrapped(f):
+        def wrap(*args, **kwargs):
+            passed_in_tag = args[0]
+            if passed_in_tag is None:
+                return None
+            w_namespace = get_namespace(passed_in_tag, 'w')
+            valid_tags = [
+                '%s%s' % (w_namespace, t) for t in tags
+            ]
+            if passed_in_tag.tag in valid_tags:
+                return f(*args, **kwargs)
+            return None
+        return wrap
+    return wrapped
+
+
+def get_namespace(el, namespace):
+    return '{%s}' % el.nsmap[namespace]
+
+
+def convert_image(target, image_size):
+    _, extension = os.path.splitext(os.path.basename(target))
+    # All the image types need to be converted to gif.
+    invalid_extensions = (
+        '.bmp',
+        '.dib',
+        '.tiff',
+        '.tif',
+    )
+    # Open the image and get the format.
+    try:
+        image = Image.open(target)
+    except IOError:
+        return target
+    image_format = image.format
+    image_file_name = target
+
+    # Make sure the size of the image and the size of the embedded image are
+    # the same.
+    if image_size is not None and image.size != image_size:
+        # Resize if needed
+        try:
+            image = image.resize(image_size, Image.ANTIALIAS)
+        except IOError:
+            pass
+
+    # If we have an invalid extension, change the format to gif.
+    if extension.lower() in invalid_extensions:
+        image_format = 'GIF'
+        image_file_name = replace_ext(target, '.gif')
+
+    # Resave the image (Post resizing) with the correct format
+    try:
+        image.save(image_file_name, image_format)
+    except IOError:
+        return target
+    return image_file_name
+
+
+@ensure_tag(['p'])
+def get_font_size(p, styles_dict):
+    w_namespace = get_namespace(p, 'w')
+    r = p.find('%sr' % w_namespace)
+    if r is None:
+        return None
+    rpr = r.find('%srPr' % w_namespace)
+    if rpr is None:
+        return None
+    size = rpr.find('%ssz' % w_namespace)
+    if size is None:
+        # Need to get the font size off the styleId
+        pPr = p.find('%spPr' % w_namespace)
+        if pPr is None:
+            return None
+        pStyle = pPr.find('%spStyle' % w_namespace)
+        if pStyle is None:
+            return None
+        pStyle = pStyle.get('%sval' % w_namespace)
+        font_size = None
+        if 'font_size' in styles_dict[pStyle]:
+            font_size = styles_dict[pStyle]['font_size']
+        while font_size is None:
+            old_pStyle = pStyle
+            if pStyle not in styles_dict:
+                break
+            if 'based_on' not in styles_dict[pStyle]:
+                break
+            pStyle = styles_dict[pStyle]['based_on']
+            if old_pStyle == pStyle:
+                break
+            font_size = styles_dict[pStyle]['font_size']
+        return font_size
+
+    return size.get('%sval' % w_namespace)
+
+
+@ensure_tag(['p'])
+def is_natural_header(el, styles_dict):
+    w_namespace = get_namespace(el, 'w')
+    pPr = el.find('%spPr' % w_namespace)
+    if pPr is None:
+        return False
+    pStyle = pPr.find('%spStyle' % w_namespace)
+    if pStyle is None:
+        return False
+    style_id = pStyle.get('%sval' % w_namespace)
+    if (
+            style_id in styles_dict and
+            'header' in styles_dict[style_id] and
+            styles_dict[style_id]['header']
+        ):
+        return styles_dict[style_id]['header']
+
+
+@ensure_tag(['p'])
+def is_header(el, meta_data):
+    el_is_natural_header = is_natural_header(el, meta_data.styles_dict)
+    if el_is_natural_header:
+        return el_is_natural_header
+    if _is_li(el):
+        return False
+    w_namespace = get_namespace(el, 'w')
+    if el.tag == '%stbl' % w_namespace:
+        return False
+
+    # Check to see if this is a header because the font size is different than
+    # the normal font size.
+    # Since get_font_size is a method used before meta is created, just pass in
+    # styles_dict.
+    if DETECT_FONT_SIZE:
+        font_size = get_font_size(el, meta_data.styles_dict)
+        if font_size is not None:
+            if meta_data.font_sizes_dict[font_size]:
+                return meta_data.font_sizes_dict[font_size]
+
+    # If a paragraph is longer than eight words it is likely not supposed to be
+    # an h tag.
+    num_words = len(
+        etree.tostring(
+            el,
+            encoding=unicode,
+            method='text',
+        ).split(' ')
+    )
+    if num_words > 8:
+        return False
+
+    # Check to see if the full line is bold.
+    whole_line_bold, whole_line_italics = whole_line_styled(el)
+    if whole_line_bold or whole_line_italics:
+        return 'h2'
+    return False
+
+
+@ensure_tag(['p'])
+def _is_top_level_upper_roman(el, meta_data):
+    w_namespace = get_namespace(el, 'w')
+    ilvl = get_ilvl(el, w_namespace)
+    # If this list is not in the root document (indentation of 0), then it
+    # cannot be a top level upper roman list.
+    if ilvl != 0:
+        return False
+    numId = get_numId(el, w_namespace)
+    list_type = meta_data.numbering_dict[numId].get(ilvl, False)
+    return list_type == 'upperRoman'
+
+
+@ensure_tag(['p'])
+def _is_li(el):
+    return len(el.xpath('.//w:numPr/w:ilvl', namespaces=el.nsmap)) != 0
+
+
+@ensure_tag(['p'])
+def is_li(el, meta_data):
+    """
+    The only real distinction between an ``li`` tag and a ``p`` tag is that an
+    ``li`` tag has an attribute called numPr which holds the list id and ilvl
+    (indentation level)
+    """
+
+    if is_header(el, meta_data):
+        return False
+    return _is_li(el)
+
+
+def has_text(p):
+    """
+    It is possible for a ``p`` tag in document.xml to not have any content. If
+    this is the case we do not want that tag interfering with things like
+    lists. Detect if this tag has any content.
+    """
+    return etree.tostring(p, encoding=unicode, method='text') != ''
+
+
+@ensure_tag(['p'])
+def get_li_nodes(li, meta_data):
+    """
+    Find consecutive li tags that have content that have the same list id.
+    """
+    w_namespace = get_namespace(li, 'w')
+    yield li
+    current_numId = get_numId(li, w_namespace)
+    el = li
+    while True:
+        el = el.getnext()
+        if el is None:
+            break
+        # If the tag has no content ignore it.
+        if not has_text(el):
+            continue
+        # If the next tag is not an li tag then we have found the end of the
+        # list.
+        if not is_li(el, meta_data):
+            break
+
+        # Stop the lists if you come across a list item that should be a
+        # heading.
+        if _is_top_level_upper_roman(el, meta_data):
+            break
+
+        # If the list id of the next tag is different that the previous that
+        # means a new list being made (not nested)
+        numId = get_numId(el, w_namespace)
+        if current_numId != numId:
+            break
+        yield el
+
+
+@ensure_tag(['p'])
+def get_ilvl(li, w_namespace):
+    """
+    The ilvl on an li tag tells the li tag at what level of indentation this
+    tag is at. This is used to determine if the li tag needs to be nested or
+    not.
+    """
+    ilvls = li.xpath('.//w:ilvl', namespaces=li.nsmap)
+    if len(ilvls) == 0:
+        return -1
+    return int(ilvls[0].get('%sval' % w_namespace))
+
+
+@ensure_tag(['p'])
+def get_numId(li, w_namespace):
+    """
+    The numId on an li tag maps to the numbering dictionary along side the ilvl
+    to determine what the list should look like (unordered, digits, lower
+    alpha, etc)
+    """
+    numIds = li.xpath('.//w:numId', namespaces=li.nsmap)
+    if len(numIds) == 0:
+        return -1
+    return numIds[0].get('%sval' % w_namespace)
+
+
+def create_list(list_type):
+    """
+    Based on the passed in list_type create a list objects (ol/ul). In the
+    future this function will also deal with what the numbering of an ordered
+    list should look like.
+    """
+    list_types = {
+        'bullet': 'ul',
+    }
+    el = etree.Element(list_types.get(list_type, 'ol'))
+    # These are the supported list style types and their conversion to css.
+    list_type_conversions = {
+        'decimal': 'decimal',
+        'decimalZero': 'decimal-leading-zero',
+        'upperRoman': 'upper-roman',
+        'lowerRoman': 'lower-roman',
+        'upperLetter': 'upper-alpha',
+        'lowerLetter': 'lower-alpha',
+        'ordinal': 'decimal',
+        'cardinalText': 'decimal',
+        'ordinalText': 'decimal',
+    }
+    if list_type != 'bullet':
+        el.set(
+            'data-list-type',
+            list_type_conversions.get(list_type, 'decimal'),
+        )
+    return el
+
+
+@ensure_tag(['tc'])
+def get_v_merge(tc):
+    """
+    vMerge is what docx uses to denote that a table cell is part of a rowspan.
+    The first cell to have a vMerge is the start of the rowspan, and the vMerge
+    will be denoted with 'restart'. If it is anything other than restart then
+    it is a continuation of another rowspan.
+    """
+    if tc is None:
+        return None
+    v_merges = tc.xpath('.//w:vMerge', namespaces=tc.nsmap)
+    if len(v_merges) != 1:
+        return None
+    v_merge = v_merges[0]
+    return v_merge
+
+
+@ensure_tag(['tc'])
+def get_grid_span(tc):
+    """
+    gridSpan is what docx uses to denote that a table cell has a colspan. This
+    is much more simple than rowspans in that there is a one-to-one mapping
+    from gridSpan to colspan.
+    """
+    w_namespace = get_namespace(tc, 'w')
+    grid_spans = tc.xpath('.//w:gridSpan', namespaces=tc.nsmap)
+    if len(grid_spans) != 1:
+        return 1
+    grid_span = grid_spans[0]
+    return int(grid_span.get('%sval' % w_namespace))
+
+
+@ensure_tag(['tr'])
+def get_td_at_index(tr, index):
+    """
+    When calculating the rowspan for a given cell it is required to find all
+    table cells 'below' the initial cell with a v_merge. This function will
+    return the td element at the passed in index, taking into account colspans.
+    """
+    current = 0
+    for td in tr.xpath('.//w:tc', namespaces=tr.nsmap):
+        if index == current:
+            return td
+        current += get_grid_span(td)
+
+
+@ensure_tag(['tbl'])
+def get_rowspan_data(table):
+    w_namespace = get_namespace(table, 'w')
+
+    # We need to keep track of what table row we are on as well as which table
+    # cell we are on.
+    tr_index = 0
+    td_index = 0
+
+    # Get a list of all the table rows.
+    tr_rows = list(table.xpath('.//w:tr', namespaces=table.nsmap))
+
+    # Loop through each table row.
+    for tr in table.xpath('.//w:tr', namespaces=table.nsmap):
+        # Loop through each table cell.
+        for td in tr.xpath('.//w:tc', namespaces=tr.nsmap):
+            # Check to see if this cell has a v_merge
+            v_merge = get_v_merge(td)
+
+            # If not increment the td_index and move on
+            if v_merge is None:
+                td_index += get_grid_span(td)
+                continue
+
+            # If it does have a v_merge we need to see if it is the ``root``
+            # table cell (the first in a row to have a rowspan)
+            # If the value is restart then this is the table cell that needs
+            # the rowspan.
+            if v_merge.get('%sval' % w_namespace) == 'restart':
+                row_span = 1
+                # Loop through each table row after the current one.
+                for tr_el in tr_rows[tr_index + 1:]:
+                    # Get the table cell at the current td_index.
+                    td_el = get_td_at_index(tr_el, td_index)
+                    td_el_v_merge = get_v_merge(td_el)
+
+                    # If the td_ell does not have a v_merge then the rowspan is
+                    # done.
+                    if td_el_v_merge is None:
+                        break
+                    val = td_el_v_merge.get('%sval' % w_namespace)
+                    # If the v_merge is restart then there is another cell that
+                    # needs a rowspan, so the current cells rowspan is done.
+                    if val == 'restart':
+                        break
+                    # Increment the row_span
+                    row_span += 1
+                yield row_span
+            # Increment the indexes.
+            td_index += get_grid_span(td)
+        tr_index += 1
+        # Reset the td_index when we finish each table row.
+        td_index = 0
+
+
+@ensure_tag(['b', 'i', 'u'])
+def style_is_false(style):
+    """
+    For bold, italics and underline. Simply checking to see if the various tags
+    are present will not suffice. If the tag is present and set to False then
+    the style should not be present.
+    """
+    if style is None:
+        return False
+    w_namespace = get_namespace(style, 'w')
+    return style.get('%sval' % w_namespace) != 'false'
+
+
+@ensure_tag(['r'])
+def is_bold(r):
+    """
+    The function will return True if the r tag passed in is considered bold.
+    """
+    w_namespace = get_namespace(r, 'w')
+    rpr = r.find('%srPr' % w_namespace)
+    if rpr is None:
+        return False
+    bold = rpr.find('%sb' % w_namespace)
+    return style_is_false(bold)
+
+
+@ensure_tag(['r'])
+def is_italics(r):
+    """
+    The function will return True if the r tag passed in is considered
+    italicized.
+    """
+    w_namespace = get_namespace(r, 'w')
+    rpr = r.find('%srPr' % w_namespace)
+    if rpr is None:
+        return False
+    italics = rpr.find('%si' % w_namespace)
+    return style_is_false(italics)
+
+
+@ensure_tag(['r'])
+def is_underlined(r):
+    """
+    The function will return True if the r tag passed in is considered
+    underlined.
+    """
+    w_namespace = get_namespace(r, 'w')
+    rpr = r.find('%srPr' % w_namespace)
+    if rpr is None:
+        return False
+    underline = rpr.find('%su' % w_namespace)
+    return style_is_false(underline)
+
+
+@ensure_tag(['p'])
+def is_title(p):
+    """
+    Certain p tags are denoted as ``Title`` tags. This function will return
+    True if the passed in p tag is considered a title.
+    """
+    w_namespace = get_namespace(p, 'w')
+    styles = p.xpath('.//w:pStyle', namespaces=p.nsmap)
+    if len(styles) == 0:
+        return False
+    style = styles[0]
+    return style.get('%sval' % w_namespace) == 'Title'
+
+
+@ensure_tag(['r'])
+def get_raw_data(r):
+    """
+    It turns out that r tags can contain both t tags and drawing tags. Since we
+    need both, this function will return them in the order in which they are
+    found.
+    """
+    w_namespace = get_namespace(r, 'w')
+    valid_elements = (
+        '%st' % w_namespace,
+        '%sdrawing' % w_namespace,
+        '%spict' % w_namespace,
+        '%sbr' % w_namespace,
+    )
+    for el in r:
+        if el.tag in valid_elements:
+            yield el
+
+
+@ensure_tag(['drawing', 'pict'])
+def get_image_id(drawing):
+    r_namespace = get_namespace(drawing, 'r')
+    for el in drawing.iter():
+        # For drawing
+        image_id = el.get('%sembed' % r_namespace)
+        if image_id is not None:
+            return image_id
+        # For pict
+        if 'v' not in el.nsmap:
+            continue
+        v_namespace = get_namespace(drawing, 'v')
+        if el.tag == '%simagedata' % v_namespace:
+            image_id = el.get('%sid' % r_namespace)
+            if image_id is not None:
+                return image_id
+
+
+@ensure_tag(['p'])
+def whole_line_styled(p):
+    """
+    Checks to see if the whole p tag will end up being bold or italics. Returns
+    a tuple (boolean, boolean). The first boolean will be True if the whole
+    line is bold, False otherwise. The second boolean will be True if the whole
+    line is italics, False otherwise.
+    """
+    r_tags = p.xpath('.//w:r', namespaces=p.nsmap)
+    tags_are_bold = [
+        is_bold(r) or is_underlined(r) for r in r_tags
+    ]
+    tags_are_italics = [
+        is_italics(r) for r in r_tags
+    ]
+    return all(tags_are_bold), all(tags_are_italics)
+
+
+MetaData = namedtuple(
+    'MetaData',
+    [
+        'numbering_dict',
+        'relationship_dict',
+        'styles_dict',
+        'font_sizes_dict',
+        'image_handler',
+        'image_sizes',
+    ],
+)
+
+
+###
+# Pre-processing
+###
+
+
+def get_numbering_info(tree):
+    """
+    There is a separate file called numbering.xml that stores how lists should
+    look (unordered, digits, lower case letters, etc.). Parse that file and
+    return a dictionary of what each combination should be based on list Id and
+    level of indentation.
+    """
+    if tree is None:
+        return {}
+    w_namespace = get_namespace(tree, 'w')
+    num_ids = {}
+    result = defaultdict(dict)
+    # First find all the list types
+    for list_type in tree.findall('%snum' % w_namespace):
+        list_id = list_type.get('%snumId' % w_namespace)
+
+        # Each list type is assigned an abstractNumber that defines how lists
+        # should look.
+        abstract_number = list_type.find('%sabstractNumId' % w_namespace)
+        num_ids[abstract_number.get('%sval' % w_namespace)] = list_id
+
+    # Loop through all the abstractNumbers
+    for abstract_number in tree.findall('%sabstractNum' % w_namespace):
+        abstract_num_id = abstract_number.get('%sabstractNumId' % w_namespace)
+        # If we find an abstractNumber that is not being used in the document
+        # then ignore it.
+        if abstract_num_id not in num_ids:
+            continue
+
+        # Get the level of the abstract number.
+        for lvl in abstract_number.findall('%slvl' % w_namespace):
+            ilvl = int(lvl.get('%silvl' % w_namespace))
+            lvl_format = lvl.find('%snumFmt' % w_namespace)
+            list_style = lvl_format.get('%sval' % w_namespace)
+            # Based on the list type and the ilvl (indentation level) store the
+            # needed style.
+            result[num_ids[abstract_num_id]][ilvl] = list_style
+    return result
+
+
+def get_style_dict(tree):
+    """
+    Some things that are considered lists are actually supposed to be H tags
+    (h1, h2, etc.) These can be denoted by their styleId
+    """
+    # This is a partial document and actual h1 is the document title, which
+    # will be displayed elsewhere.
+    headers = {
+        'Heading 1': 'h2',
+        'Heading 2': 'h3',
+        'Heading 3': 'h4',
+        'Heading 4': 'h5',
+        'Heading 5': 'h6',
+        'Heading 6': 'h6',
+        'Heading 7': 'h6',
+        'Heading 8': 'h6',
+        'Heading 9': 'h6',
+        'Heading 10': 'h6',
+    }
+    if tree is None:
+        return {}
+    w_namespace = get_namespace(tree, 'w')
+    result = defaultdict(dict)
+    for el in tree:
+        style_id = el.get('%sstyleId' % w_namespace)
+        el_result = {
+            'header': False,
+            'font_size': None,
+            'based_on': None,
+        }
+        # Get the header info
+        name = el.find('%sname' % w_namespace)
+        if name is None:
+            continue
+        value = name.get('%sval' % w_namespace)
+        if value in headers:
+            el_result['header'] = headers[value]
+
+        # Get the size info.
+        rpr = el.find('%srPr' % w_namespace)
+        if rpr is None:
+            continue
+        size = rpr.find('%ssz' % w_namespace)
+        if size is None:
+            el_result['font_size'] = None
+        else:
+            el_result['font_size'] = size.get('%sval' % w_namespace)
+
+        # Get based on info.
+        based_on = el.find('%sbasedOn' % w_namespace)
+        if based_on is None:
+            el_result['based_on'] = None
+        else:
+            el_result['based_on'] = based_on.get('%sval' % w_namespace)
+        result[style_id] = el_result
+    return result
+
+
+def get_image_sizes(tree):
+    drawings = []
+    result = {}
+    w_namespace = get_namespace(tree, 'w')
+    for el in tree.iter():
+        if el.tag == '%sdrawing' % w_namespace:
+            drawings.append(el)
+    for d in drawings:
+        for el in d.iter():
+            if 'a' not in el.nsmap:
+                continue
+            a_namespace = get_namespace(el, 'a')
+            if el.tag == '%sxfrm' % a_namespace:
+                ext = el.find('%sext' % a_namespace)
+                cx = int(ext.get('cx')) / EMUS_PER_PIXEL
+                cy = int(ext.get('cy')) / EMUS_PER_PIXEL
+                result[get_image_id(d)] = (cx, cy)
+    return result
+
+
+def get_relationship_info(tree, media, image_sizes):
+    """
+    There is a separate file holds the targets to links as well as the targets
+    for images. Return a dictionary based on the relationship id and the
+    target.
+    """
+    if tree is None:
+        return {}
+    result = {}
+    # Loop through each relationship.
+    for el in tree.iter():
+        el_id = el.get('Id')
+        if el_id is None:
+            continue
+        # Store the target in the result dict.
+        target = el.get('Target')
+        if target in media:
+            image_size = image_sizes.get(el_id)
+            target = convert_image(media[target], image_size)
+        # cgi will replace things like & < > with &amp; &lt; &gt;
+        result[el_id] = cgi.escape(target)
+
+    return result
+
+
+def get_font_sizes_dict(tree, styles_dict):
+    font_sizes_dict = defaultdict(int)
+    # Get all the fonts sizes and how often they are used in a dict.
+    for p in tree.xpath('//w:p', namespaces=tree.nsmap):
+        # If this p tag is a natural header, skip it
+        if is_natural_header(p, styles_dict):
+            continue
+        if _is_li(p):
+            continue
+        font_size = get_font_size(p, styles_dict)
+        if font_size is None:
+            continue
+        font_sizes_dict[font_size] += 1
+
+    # Find the most used font size.
+    most_used_font_size = -1
+    highest_count = -1
+    for size, count in font_sizes_dict.items():
+        if count > highest_count:
+            highest_count = count
+            most_used_font_size = size
+    # Consider the most used font size to be the 'default' font size. Any font
+    # size that is different will be considered an h tag.
+    result = {}
+    for size in font_sizes_dict:
+        if size is None:
+            continue
+        if int(size) > int(most_used_font_size):
+            # Not an h tag
+            result[size] = 'h2'
+        else:
+            result[size] = None
+    return result
+
+
+def _get_document_data(f, image_handler=None):
+    '''
+    ``f`` is a ``ZipFile`` that is open
+    Extract out the document data, numbering data and the relationship data.
+    '''
+    if image_handler is None:
+        def image_handler(image_id, relationship_dict):
+            return relationship_dict.get(image_id)
+
+    document_xml = None
+    numbering_xml = None
+    relationship_xml = None
+    styles_xml = None
+    parser = etree.XMLParser(strip_cdata=False)
+    path, _ = os.path.split(f.filename)
+    media = {}
+    image_sizes = {}
+    # Loop through the files in the zip file.
+    for item in f.infolist():
+        # This file holds all the content of the document.
+        if item.filename == 'word/document.xml':
+            xml = f.read(item.filename)
+            document_xml = etree.fromstring(xml, parser)
+        # This file tells document.xml how lists should look.
+        elif item.filename == 'word/numbering.xml':
+            xml = f.read(item.filename)
+            numbering_xml = etree.fromstring(xml, parser)
+        elif item.filename == 'word/styles.xml':
+            xml = f.read(item.filename)
+            styles_xml = etree.fromstring(xml, parser)
+        # This file holds the targets for hyperlinks and images.
+        elif item.filename == 'word/_rels/document.xml.rels':
+            xml = f.read(item.filename)
+            try:
+                relationship_xml = etree.fromstring(xml, parser)
+            except XMLSyntaxError:
+                relationship_xml = etree.fromstring('<xml></xml>', parser)
+        if item.filename.startswith('word/media/'):
+            # Strip off the leading word/
+            media[item.filename[len('word/'):]] = f.extract(
+                item.filename,
+                path,
+            )
+    # Close the file pointer.
+    f.close()
+
+    # Get dictionaries for the numbering and the relationships.
+    numbering_dict = get_numbering_info(numbering_xml)
+    image_sizes = get_image_sizes(document_xml)
+    relationship_dict = get_relationship_info(
+        relationship_xml,
+        media,
+        image_sizes
+    )
+    styles_dict = get_style_dict(styles_xml)
+    font_sizes_dict = get_font_sizes_dict(document_xml, styles_dict)
+    meta_data = MetaData(
+        numbering_dict=numbering_dict,
+        relationship_dict=relationship_dict,
+        styles_dict=styles_dict,
+        font_sizes_dict=font_sizes_dict,
+        image_handler=image_handler,
+        image_sizes=image_sizes,
+    )
+    return document_xml, meta_data
+
+
+###
+# HTML Building functions
+###
+
+
+def get_list_data(li_nodes, meta_data):
+    """
+    Build the list structure and return the root list
+    """
+    # Need to keep track of all incomplete nested lists.
+    ol_dict = {}
+
+    # Need to keep track of the current indentation level.
+    current_ilvl = -1
+
+    # Need to keep track of the current list id.
+    current_numId = -1
+
+    # Need to keep track of list that new li tags should be added too.
+    current_ol = None
+
+    # Store the first list created (the root list) for the return value.
+    root_ol = None
+    visited_nodes = []
+    for li_node in li_nodes:
+        w_namespace = get_namespace(li_node, 'w')
+        # Get the data needed to build the current list item
+        text = get_p_data(
+            li_node,
+            meta_data,
+        )
+        ilvl = get_ilvl(li_node, w_namespace)
+        numId = get_numId(li_node, w_namespace)
+        list_type = meta_data.numbering_dict[numId].get(ilvl, 'decimal')
+
+        # If the ilvl is greater than the current_ilvl or the list id is
+        # changing then we have the first li tag in a nested list. We need to
+        # create a new list object and update all of our variables for keeping
+        # track.
+        if (ilvl > current_ilvl) or (numId != current_numId):
+            # Only create a new list
+            ol_dict[ilvl] = create_list(list_type)
+            current_ol = ol_dict[ilvl]
+            current_ilvl = ilvl
+            current_numId = numId
+        # Both cases above are not True then we need to close all lists greater
+        # than ilvl and then remove them from the ol_dict
+        else:
+            # Merge any nested lists that need to be merged.
+            for i in reversed(range(ilvl, current_ilvl)):
+                # Any list that is more indented that ilvl needs to
+                # be merged to the list before it.
+                if i not in ol_dict:
+                    continue
+                if ol_dict[i] is not current_ol:
+                    ol_dict[i].append(current_ol)
+                    current_ol = ol_dict[i]
+
+            # Clean up finished nested lists.
+            for key in list(ol_dict):
+                if key > ilvl:
+                    del ol_dict[key]
+
+        # Set the root list after the first list is created.
+        if root_ol is None:
+            root_ol = current_ol
+
+        # Set the current list.
+        if ilvl in ol_dict:
+            current_ol = ol_dict[ilvl]
+        else:
+            # In some instances the ilvl is not in the ol_dict, if that is the
+            # case, create it here (not sure how this happens but it has
+            # before.)
+            ol_dict[ilvl] = create_list(list_type)
+            current_ilvl = ilvl
+            current_numId = numId
+            current_ol = ol_dict[ilvl]
+
+        # Create the li element.
+        li_el = etree.XML('<li>%s</li>' % text)
+        current_ol.append(li_el)
+        visited_nodes.extend(list(li_node.iter()))
+
+    # Merge up any nested lists that have not been merged.
+    for i in reversed(range(0, current_ilvl)):
+        if i not in ol_dict:
+            continue
+        # If we do not do this check it is possible to create an infinite loop
+        # in etree.
+        if ol_dict[i] is current_ol:
+            continue
+        # append the current ol to the end of the last li tag.
+        ol_dict[i][-1].append(current_ol)
+        current_ol = ol_dict[i]
+
+    return root_ol, visited_nodes
+
+
+@ensure_tag(['tr'])
+def get_tr_data(tr, meta_data, row_spans):
+    """
+    This will return a single tr element, with all tds already populated.
+    """
+
+    # Create a blank tr element.
+    tr_el = etree.Element('tr')
+    w_namespace = get_namespace(tr, 'w')
+    visited_nodes = []
+    for el in tr:
+        if el in visited_nodes:
+            continue
+        visited_nodes.append(el)
+        # Find the table cells.
+        if el.tag == '%stc' % w_namespace:
+            v_merge = get_v_merge(el)
+            # If there is a v_merge and it is not restart then this cell can be
+            # ignored.
+            if (
+                    v_merge is not None and
+                    v_merge.get('%sval' % w_namespace) != 'restart'
+                ):
+                continue
+
+            # Create the td element with all the text break-joined.
+            td_el = etree.XML('<td></td>')
+
+            # Loop through each and build a list of all the content.
+            texts = []
+            for td_content in el:
+                # Since we are doing look-a-heads in this loop we need to check
+                # again to see if we have already visited the node.
+                if td_content in visited_nodes:
+                    continue
+
+                # Check to see if it is a list or a regular paragraph.
+                if is_li(td_content, meta_data):
+                    # If it is a list, create the list and update
+                    # visited_nodes.
+                    li_nodes = get_li_nodes(td_content, meta_data)
+                    list_el, list_visited_nodes = get_list_data(
+                        li_nodes,
+                        meta_data,
+                    )
+                    visited_nodes.extend(list_visited_nodes)
+                    texts.append(etree.tostring(list_el))
+                elif td_content.tag == '%stbl' % w_namespace:
+                    table_el, table_visited_nodes = get_table_data(
+                        td_content,
+                        meta_data,
+                    )
+                    visited_nodes.extend(table_visited_nodes)
+                    texts.append(etree.tostring(table_el))
+                elif td_content.tag == '%stcPr' % w_namespace:
+                    # Do nothing
+                    visited_nodes.append(td_content)
+                    continue
+                else:
+                    text = get_p_data(
+                        td_content,
+                        meta_data,
+                        is_td=True,
+                    )
+                    texts.append(text)
+
+            data = '<br/>'.join(texts)
+            td_el = etree.XML('<td>%s</td>' % data)
+            # if there is a colspan then set it here.
+            colspan = get_grid_span(el)
+            if colspan > 1:
+                td_el.set('colspan', '%d' % colspan)
+            v_merge = get_v_merge(el)
+
+            # If this td has a v_merge and it is restart then set the rowspan
+            # here.
+            if (
+                    v_merge is not None and
+                    v_merge.get('%sval' % w_namespace) == 'restart'
+                ):
+                rowspan = next(row_spans)
+                td_el.set('rowspan', '%d' % rowspan)
+
+            tr_el.append(td_el)
+    return tr_el
+
+
+@ensure_tag(['tbl'])
+def get_table_data(table, meta_data):
+    """
+    This returns a table object with all rows and cells correctly populated.
+    """
+
+    # Create a blank table element.
+    table_el = etree.Element('table')
+    w_namespace = get_namespace(table, 'w')
+
+    # Get the rowspan values for cells that have a rowspan.
+    row_spans = get_rowspan_data(table)
+    for el in table:
+        if el.tag == '%str' % w_namespace:
+            # Create the tr element.
+            tr_el = get_tr_data(
+                el,
+                meta_data,
+                row_spans,
+            )
+            # And append it to the table.
+            table_el.append(tr_el)
+
+    visited_nodes = list(table.iter())
+    return table_el, visited_nodes
+
+
+@ensure_tag(['t'])
+def handle_t_tag(
+        t, parent, hyperlink_id, remove_bold, remove_italics, meta_data):
+    """
+    Generate the string data that for this particular t tag.
+    """
+    if t is None or t.text is None:
+        return ''
+
+    # Need to escape the text so that we do not accidentally put in text
+    # that is not valid XML.
+    # cgi will replace things like & < > with &amp; &lt; &gt;
+    text = cgi.escape(t.text)
+    if hyperlink_id is not None:
+        # The relationship_id is the href
+        if hyperlink_id in meta_data.relationship_dict:
+            href = meta_data.relationship_dict[hyperlink_id]
+            text = '<a href="%s">%s</a>' % (href, text)
+    # Wrap the text with any modifiers it might have (bold, italics or
+    # underline)
+    el_is_bold = not remove_bold and (
+        is_bold(parent) or
+        is_underlined(parent)
+    )
+    el_is_italics = not remove_italics and is_italics(parent)
+    if el_is_bold:
+        text = '<strong>%s</strong>' % text
+    if el_is_italics:
+        text = '<em>%s</em>' % text
+    return text
+
+
+def _get_image_size_from_image(target):
+    image = Image.open(target)
+    return image.size
+
+
+@ensure_tag(['p'])
+def get_p_data(p, meta_data, is_td=False):
+    """
+    P tags are made up of several runs (r tags) of text. This function takes a
+    p tag and constructs the text that should be part of the p tag.
+
+    image_handler should be a callable that returns the desired ``src``
+    attribute for a given image.
+    """
+    remove_italics = False
+    remove_bold = False
+    if not is_td and not is_li(p, meta_data):
+        # Check to see if the whole line is bold or italics.
+        whole_line_bold, whole_line_italics = whole_line_styled(p)
+        p_is_header = bool(is_header(p, meta_data) and not is_li(p, meta_data))
+
+        # Only remove bold or italics if this tag is an h tag.
+        remove_bold = p_is_header and whole_line_bold
+        remove_italics = p_is_header and whole_line_italics
+
+    p_text = ''
+    w_namespace = get_namespace(p, 'w')
+    if len(p) == 0:
+        return ''
+    child = p[0]
+    tags = (
+        '%sr' % w_namespace,
+        '%shyperlink' % w_namespace,
+        '%sins' % w_namespace,
+    )
+    elements = []
+    # Get the tags that are r tags or hyperlink tags
+    while True:
+        if child is None:
+            break
+        if child.tag in tags:
+            # By default nothing needs to be forced bold.
+            elements.append(child)
+        child = child.getnext()
+
+    # Loop through each of the r and hyperlink tags
+    for el in elements:
+        hyperlink_id = None
+        # Hyperlinks and insert tags need to be handled differently than
+        # normals runs.
+        if el.tag == '%sins' % w_namespace:
+            # Insert tags can have an arbitrary number of r tags in them. Find
+            # each and insert them into the elements list as the next elements
+            # in reverse order.
+            el_index = elements.index(el)
+            for r in reversed(el.xpath('.//w:r', namespaces=el.nsmap)):
+                # Be very careful when editing around this. This could cause
+                # problems if not understood. We are intentionally inserting
+                # new elements into the currently looping list.
+                elements.insert(el_index + 1, r)
+            continue
+        elif el.tag == '%shyperlink' % w_namespace:
+            # If we have a hyperlink we need to get relationship_id
+            r_namespace = get_namespace(el, 'r')
+            hyperlink_id = el.get('%sid' % r_namespace)
+
+            # Once we have the hyperlink_id then we need to replace the
+            # hyperlink tag with its child run tag.
+            el = el.find('%sr' % w_namespace)
+
+        # t tags hold all the text content.
+        for child in get_raw_data(el):
+            if child.tag == '%st' % w_namespace:
+                p_text += handle_t_tag(
+                    child,
+                    el,
+                    hyperlink_id,
+                    remove_bold,
+                    remove_italics,
+                    meta_data,
+                )
+            elif child.tag == '%sbr' % w_namespace:
+                p_text += '<br />'
+            else:  # We have an image
+                image_id = get_image_id(child)
+                src = meta_data.image_handler(
+                    image_id,
+                    meta_data.relationship_dict,
+                )
+                if image_id in meta_data.image_sizes:
+                    width, height = meta_data.image_sizes[image_id]
+                else:
+                    target = meta_data.relationship_dict[image_id]
+                    width, height = _get_image_size_from_image(target)
+                p_text += '<img src="%s" height="%d" width="%d"/>' % (
+                    src,
+                    height,
+                    width,
+                )
+
+    # This function does not return a p tag since other tag types need this as
+    # well (td, li).
+    return p_text
+
+
+def get_zip_file_handler(file_path):
+    return ZipFile(file_path)
+
+
+def convert(file_path, image_handler=None, fall_back=None):
+    file_base, extension = os.path.splitext(os.path.basename(file_path))
+
+    if not is_extractable(file_path):
+        #XXX create better exception, used to be InvalidFileExtension
+        raise Exception(
+            'The file type "%s" is not supported' % extension
+        )
+
+    if extension == '.html':
+        with open(file_path) as f:
+            html = f.read()
+        return html
+
+    # Create the converted file as a file in the same dir with the
+    # same name only with a .docx extension
+    docx_path = replace_ext(file_path, '.docx')
+    if extension == '.docx':
+        # If the file is already html, just leave it in place.
+        docx_path = file_path
+    else:
+        # Convert the file to docx
+        # TODO make this configurable.
+        subprocess.call(
+            ['abiword', '--to=docx', '--to-name', docx_path, file_path],
+        )
+    try:
+        # Docx files are actually just zip files.
+        zf = get_zip_file_handler(docx_path)
+    except BadZipfile:
+        # If its a malformed zip file raise InvalidFileExtension
+        # XXX
+        raise Exception('This file is not a docx')
+    except IOError:
+        # This means that the conversion from abiword failed.
+        if fall_back is not None:
+            return fall_back(file_path)
+        else:
+            # XXX
+            raise Exception('Conversion to docx failed.')
+
+    # Need to populate the xml based on word/document.xml
+    tree, meta_data = _get_document_data(zf, image_handler)
+    return create_html(tree, meta_data)
+
+
+def create_html(tree, meta_data):
+
+    # Start the return value
+    new_html = etree.Element('html')
+
+    w_namespace = get_namespace(tree, 'w')
+    visited_nodes = []
+    for el in tree.iter():
+        # The way lists are handled could double visit certain elements; keep
+        # track of which elements have been visited and skip any that have been
+        # visited already.
+        if el in visited_nodes:
+            continue
+        if el.tag == '%sp' % w_namespace:
+            # If this is true we have a bullet in some list
+            if is_li(el, meta_data):
+                # This should be a header instead.
+                if _is_top_level_upper_roman(el, meta_data):
+                    p_text = get_p_data(el, meta_data)
+                    new_html.append(
+                        etree.XML('<h2>%s</h2>' % p_text)
+                    )
+                    continue
+                # Parse out the needed info from the node.
+                li_nodes = get_li_nodes(el, meta_data)
+                list_el, list_visited_nodes = get_list_data(
+                    li_nodes,
+                    meta_data,
+                )
+                visited_nodes.extend(list_visited_nodes)
+                new_html.append(list_el)
+                continue
+
+        if el.tag == '%stbl' % w_namespace:
+            table_el, table_visited_nodes = get_table_data(
+                el,
+                meta_data,
+            )
+            visited_nodes.extend(table_visited_nodes)
+            new_html.append(table_el)
+            continue
+
+        # Handle generic p tag here.
+        if el.tag == '%sp' % w_namespace:
+            # Strip out titles.
+            if is_title(el):
+                continue
+
+            # If there is not text do not add an empty tag.
+            p_text = get_p_data(el, meta_data)
+            if p_text == '':
+                continue
+
+            # Check to see if its a header
+            header_value = is_header(el, meta_data)
+            if header_value:
+                # Make a header based of the header_value
+                new_html.append(
+                    etree.XML('<%s>%s</%s>' % (
+                        header_value,
+                        p_text,
+                        header_value,
+                    ))
+                )
+            else:
+                # Make a paragraph
+                new_html.append(etree.XML('<p>%s</p>' % p_text))
+            continue
+
+        # Keep track of visited_nodes
+        visited_nodes.append(el)
+    return etree.tostring(new_html)

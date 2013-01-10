@@ -10,7 +10,7 @@ except ImportError:
     use_setuptools()
     from setuptools import setup, find_packages  # noqa
 
-long_description = codecs.open("README.rst", "r", "utf-8").read()
+long_description = codecs.open("README.md", "r", "utf-8").read()
 
 setup(
     name="docx2html",
@@ -24,7 +24,7 @@ setup(
     packages=find_packages(),
     scripts=[],
     zip_safe=False,
-    install_requires=['lxml', 'PIL'],
+    install_requires=['lxml', 'pillow==1.7.7'],
     cmdclass={},
     classifiers=[
         "Development Status :: 3 - Alpha",
