@@ -19,7 +19,7 @@ def get_readme():
 
 setup(
     name="docx2html",
-    version="0.0.6",
+    version="0.0.7",
     description="docx (OOXML) to html converter",
     author="Jason Ward",
     author_email="jason.louard.ward@gmail.com",
