@@ -14,7 +14,7 @@ long_description = codecs.open("README.md", "r", "utf-8").read()
 
 setup(
     name="docx2html",
-    version="0.0.3",
+    version="0.0.4",
     description="docx (OOXML) to html converter",
     author="Jason Ward",
     author_email="jason.louard.ward@gmail.com",
