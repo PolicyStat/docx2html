@@ -10,9 +10,16 @@ Usage
     >>> html = convert('path/to/docx/file')
 
 
-Running Tests
-=============
+## Running Tests for Development
 
+
+	$ virtualenv path/to/new/virtualenv
+	$ source path/to/new/virtualenv/bin/activate
+	$ cd path/to/workspace
+	$ git clone git://github.com/PolicyStat/docx2html.git
+	$ cd docx2html
+	$ pip install .
+	$ pip install -r test_requirements.txt
     $ ./run_tests.sh
 
 
