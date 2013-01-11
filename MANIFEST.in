@@ -1,1 +1,1 @@
-include MANIFEST.in docx2html/fixtures/*
+include MANIFEST.md docx2html/fixtures/*
