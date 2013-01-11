@@ -698,10 +698,16 @@ def test_has_title():
     assert_html_equal(actual_html, '''<html><p>Text</p></html>''')
 
 
-def test_missing_converter():
+def _converter(*args, **kwargs):
+    # Having a converter that does nothing is the same as if abiword fails to
+    # convert.
+    pass
+
+
+def test_converter_broken():
     file_path = 'test.doc'
     try:
-        convert(file_path)
+        convert(file_path, converter=_converter)
     except ConversionFailed:
         pass
     else:
@@ -713,5 +719,5 @@ def test_fall_back():
 
     def fall_back(*args, **kwargs):
         return 'success'
-    html = convert(file_path, fall_back=fall_back)
+    html = convert(file_path, fall_back=fall_back, converter=_converter)
     assert html == 'success'
