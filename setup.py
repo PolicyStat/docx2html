@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import codecs
+import os
 
 try:
     from setuptools import setup, find_packages
@@ -10,11 +10,16 @@ except ImportError:
     use_setuptools()
     from setuptools import setup, find_packages  # noqa
 
-long_description = codecs.open("README.md", "r", "utf-8").read()
+rel_file = lambda *args: os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), *args)
+
+
+def get_readme():
+    return open(rel_file('README.md')).read()
 
 setup(
     name="docx2html",
-    version="0.0.4",
+    version="0.0.5",
     description="docx (OOXML) to html converter",
     author="Jason Ward",
     author_email="jason.louard.ward@gmail.com",
@@ -35,5 +40,5 @@ setup(
         "Topic :: Text Processing :: Markup :: HTML",
         "Topic :: Text Processing :: Markup :: XML",
     ],
-    long_description=long_description,
+    long_description=get_readme(),
 )
