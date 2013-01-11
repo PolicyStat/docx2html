@@ -1,1 +1,5 @@
-include MANIFEST.md docx2html/fixtures/*
+include AUTHORS
+include LICENSE
+include README.md
+include MANIFEST.in
+include docx2html/fixtures/*
