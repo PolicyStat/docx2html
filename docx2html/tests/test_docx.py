@@ -10,6 +10,9 @@ from docx2html.core import (
     _get_document_data,
     DETECT_FONT_SIZE,
 )
+from docx2html.errors import (
+    ConversionFailed,
+)
 
 
 def assert_html_equal(actual_html, expected_html):
@@ -693,3 +696,22 @@ def test_has_title():
     )
     actual_html = convert(file_path)
     assert_html_equal(actual_html, '''<html><p>Text</p></html>''')
+
+
+def test_missing_converter():
+    file_path = 'test.doc'
+    try:
+        convert(file_path)
+    except ConversionFailed:
+        pass
+    else:
+        raise AssertionError('ConversionFailed was not raised')
+
+
+def test_fall_back():
+    file_path = 'test.doc'
+
+    def fall_back(*args, **kwargs):
+        return 'success'
+    html = convert(file_path, fall_back=fall_back)
+    assert html == 'success'
