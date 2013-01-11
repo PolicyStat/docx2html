@@ -1,10 +1,11 @@
-docx2html
-=========
+# docx2html
 
-Convert a docx (OOXML) file to html
+Convert a docx (OOXML) file to semantic HTML.
+All of Word formatting nonsense is stripped away and
+you're left with a cleanly-formatted version of the content.
 
-Usage
-=====
+
+## Usage
 
     >>> from docx2html import convert
     >>> html = convert('path/to/docx/file')
@@ -23,8 +24,7 @@ Usage
     $ ./run_tests.sh
 
 
-Description
-===========
+## Description
 
 docx2html is designed to take a docx file and extract the content out and
 convert that content to html. It does not care about styles or fonts or
