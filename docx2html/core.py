@@ -8,27 +8,18 @@ from lxml.etree import XMLSyntaxError
 from collections import namedtuple, defaultdict
 from zipfile import ZipFile, BadZipfile
 
+from docx2html.errors import (
+    ConversionFailed,
+    InvalidFileExtension,
+    MissingConverter,
+)
+
 DETECT_FONT_SIZE = False
 EMUS_PER_PIXEL = 9525
-# Abiword supported formats
-VALID_EXTRACT_EXTENSIONS = [
-    '.doc', '.docx', '.dotx', '.docm', '.dotm', '.wri', '.rtf', '.txt',
-    '.text', '.wpd', '.wp', '.odt', '.ott', '.abw', '.atw', '.pdf', '.html',
-    '.dot',
-]
 
 ###
 # Help functions
 ###
-
-
-def is_extractable(path):
-    """
-    Determine if a file is something that we can extract.
-    """
-    _, extension = os.path.splitext(path)
-    extension = extension.lower()
-    return (extension in VALID_EXTRACT_EXTENSIONS)
 
 
 def replace_ext(file_path, new_ext):
@@ -1177,14 +1168,8 @@ def get_zip_file_handler(file_path):
     return ZipFile(file_path)
 
 
-def convert(file_path, image_handler=None, fall_back=None):
+def convert(file_path, image_handler=None, fall_back=None, converter=None):
     file_base, extension = os.path.splitext(os.path.basename(file_path))
-
-    if not is_extractable(file_path):
-        #XXX create better exception, used to be InvalidFileExtension
-        raise Exception(
-            'The file type "%s" is not supported' % extension
-        )
 
     if extension == '.html':
         with open(file_path) as f:
@@ -1198,25 +1183,34 @@ def convert(file_path, image_handler=None, fall_back=None):
         # If the file is already html, just leave it in place.
         docx_path = file_path
     else:
-        # Convert the file to docx
-        # TODO make this configurable.
-        subprocess.call(
-            ['abiword', '--to=docx', '--to-name', docx_path, file_path],
-        )
+        if converter is None:
+            def converter(file_path):
+                subprocess.call(
+                    [
+                        'abiword',
+                        '--to=docx',
+                        '--to-name',
+                        docx_path,
+                        file_path,
+                    ],
+                )
+        else:
+            raise MissingConverter(
+                'pass in a converter for filetypes that are not docx.'
+            )
+
     try:
         # Docx files are actually just zip files.
         zf = get_zip_file_handler(docx_path)
     except BadZipfile:
         # If its a malformed zip file raise InvalidFileExtension
-        # XXX
-        raise Exception('This file is not a docx')
+        raise InvalidFileExtension('This file is not a docx')
     except IOError:
         # This means that the conversion from abiword failed.
         if fall_back is not None:
             return fall_back(file_path)
         else:
-            # XXX
-            raise Exception('Conversion to docx failed.')
+            raise ConversionFailed('Conversion to docx failed.')
 
     # Need to populate the xml based on word/document.xml
     tree, meta_data = _get_document_data(zf, image_handler)
