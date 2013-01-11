@@ -11,7 +11,6 @@ from zipfile import ZipFile, BadZipfile
 from docx2html.errors import (
     ConversionFailed,
     InvalidFileExtension,
-    MissingConverter,
 )
 
 DETECT_FONT_SIZE = False
@@ -1194,10 +1193,7 @@ def convert(file_path, image_handler=None, fall_back=None, converter=None):
                         file_path,
                     ],
                 )
-        else:
-            raise MissingConverter(
-                'pass in a converter for filetypes that are not docx.'
-            )
+        converter(file_path)
 
     try:
         # Docx files are actually just zip files.

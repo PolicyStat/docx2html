@@ -8,7 +8,3 @@ class InvalidFileExtension(Docx2HtmlException):
 
 class ConversionFailed(Docx2HtmlException):
     pass
-
-
-class MissingConverter(Docx2HtmlException):
-    pass
