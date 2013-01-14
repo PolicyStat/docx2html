@@ -1,6 +1,6 @@
 import cgi
 import os
-import subprocess
+import os.path
 from PIL import Image
 from lxml import etree
 from lxml.etree import XMLSyntaxError
@@ -8,9 +8,10 @@ from lxml.etree import XMLSyntaxError
 from collections import namedtuple, defaultdict
 from zipfile import ZipFile, BadZipfile
 
-from docx2html.errors import (
+from docx2html.exceptions import (
     ConversionFailed,
-    InvalidFileExtension,
+    FileNotDocx,
+    MalformedDocx,
 )
 
 DETECT_FONT_SIZE = False
@@ -1183,30 +1184,19 @@ def convert(file_path, image_handler=None, fall_back=None, converter=None):
         docx_path = file_path
     else:
         if converter is None:
-            def converter(file_path):
-                subprocess.call(
-                    [
-                        'abiword',
-                        '--to=docx',
-                        '--to-name',
-                        docx_path,
-                        file_path,
-                    ],
-                )
-        converter(file_path)
+            raise FileNotDocx('The file passed in is not a docx.')
+        converter(docx_path, file_path)
+        if not os.path.isfile(docx_path):
+            if fall_back is None:
+                raise ConversionFailed('Conversion to docx failed.')
+            else:
+                return fall_back(file_path)
 
     try:
         # Docx files are actually just zip files.
         zf = get_zip_file_handler(docx_path)
     except BadZipfile:
-        # If its a malformed zip file raise InvalidFileExtension
-        raise InvalidFileExtension('This file is not a docx')
-    except IOError:
-        # This means that the conversion from abiword failed.
-        if fall_back is not None:
-            return fall_back(file_path)
-        else:
-            raise ConversionFailed('Conversion to docx failed.')
+        raise MalformedDocx('This file is not a docx')
 
     # Need to populate the xml based on word/document.xml
     tree, meta_data = _get_document_data(zf, image_handler)

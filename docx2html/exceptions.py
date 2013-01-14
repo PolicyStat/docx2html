@@ -2,9 +2,13 @@ class Docx2HtmlException(Exception):
     pass
 
 
-class InvalidFileExtension(Docx2HtmlException):
+class ConversionFailed(Docx2HtmlException):
     pass
 
 
-class ConversionFailed(Docx2HtmlException):
+class FileNotDocx(Docx2HtmlException):
+    pass
+
+
+class MalformedDocx(Docx2HtmlException):
     pass
