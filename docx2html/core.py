@@ -1,7 +1,6 @@
-from __future__ import with_statement
 import cgi
 import os
-import subprocess
+import os.path
 from PIL import Image
 from lxml import etree
 from lxml.etree import XMLSyntaxError
@@ -9,27 +8,18 @@ from lxml.etree import XMLSyntaxError
 from collections import namedtuple, defaultdict
 from zipfile import ZipFile, BadZipfile
 
+from docx2html.exceptions import (
+    ConversionFailed,
+    FileNotDocx,
+    MalformedDocx,
+)
+
 DETECT_FONT_SIZE = False
 EMUS_PER_PIXEL = 9525
-# Abiword supported formats
-VALID_EXTRACT_EXTENSIONS = [
-    '.doc', '.docx', '.dotx', '.docm', '.dotm', '.wri', '.rtf', '.txt',
-    '.text', '.wpd', '.wp', '.odt', '.ott', '.abw', '.atw', '.pdf', '.html',
-    '.dot',
-]
 
 ###
 # Help functions
 ###
-
-
-def is_extractable(path):
-    """
-    Determine if a file is something that we can extract.
-    """
-    _, extension = os.path.splitext(path)
-    extension = extension.lower()
-    return (extension in VALID_EXTRACT_EXTENSIONS)
 
 
 def replace_ext(file_path, new_ext):
@@ -1181,14 +1171,21 @@ def get_zip_file_handler(file_path):
     return ZipFile(file_path)
 
 
-def convert(file_path, image_handler=None, fall_back=None):
-    file_base, extension = os.path.splitext(os.path.basename(file_path))
+def convert(file_path, image_handler=None, fall_back=None, converter=None):
+    """
+    ``file_path`` is a path to the file on the file system that you want to be
+        converted to html.
+    ``image_handler`` is a function that takes an image_id and a
+        relationship_dict to generate the src attribute for images. (see readme
+        for more details)
+    ``fall_back`` is a function that takes a ``file_path``. This function will
+        only be called if for whatever reason the conversion fails.
+    ``converter`` is a function to convert a document that is not docx to docx
+        (examples in docx2html.converters)
 
-    if not is_extractable(file_path):
-        #XXX create better exception, used to be InvalidFileExtension
-        raise Exception(
-            'The file type "%s" is not supported' % extension
-        )
+    Returns html extracted from ``file_path``
+    """
+    file_base, extension = os.path.splitext(os.path.basename(file_path))
 
     if extension == '.html':
         with open(file_path) as f:
@@ -1202,25 +1199,20 @@ def convert(file_path, image_handler=None, fall_back=None):
         # If the file is already html, just leave it in place.
         docx_path = file_path
     else:
-        # Convert the file to docx
-        # TODO make this configurable.
-        subprocess.call(
-            ['abiword', '--to=docx', '--to-name', docx_path, file_path],
-        )
+        if converter is None:
+            raise FileNotDocx('The file passed in is not a docx.')
+        converter(docx_path, file_path)
+        if not os.path.isfile(docx_path):
+            if fall_back is None:
+                raise ConversionFailed('Conversion to docx failed.')
+            else:
+                return fall_back(file_path)
+
     try:
         # Docx files are actually just zip files.
         zf = get_zip_file_handler(docx_path)
     except BadZipfile:
-        # If its a malformed zip file raise InvalidFileExtension
-        # XXX
-        raise Exception('This file is not a docx')
-    except IOError:
-        # This means that the conversion from abiword failed.
-        if fall_back is not None:
-            return fall_back(file_path)
-        else:
-            # XXX
-            raise Exception('Conversion to docx failed.')
+        raise MalformedDocx('This file is not a docx')
 
     # Need to populate the xml based on word/document.xml
     tree, meta_data = _get_document_data(zf, image_handler)
