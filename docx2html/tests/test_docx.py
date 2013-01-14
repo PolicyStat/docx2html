@@ -3,6 +3,7 @@ import shutil
 from os import path
 from zipfile import ZipFile
 from nose.plugins.skip import SkipTest
+from nose.tools import assert_raises
 
 from docx2html.tests import collapse_html
 from docx2html import convert
@@ -10,7 +11,7 @@ from docx2html.core import (
     _get_document_data,
     DETECT_FONT_SIZE,
 )
-from docx2html.errors import (
+from docx2html.exceptions import (
     ConversionFailed,
 )
 
@@ -706,12 +707,10 @@ def _converter(*args, **kwargs):
 
 def test_converter_broken():
     file_path = 'test.doc'
-    try:
-        convert(file_path, converter=_converter)
-    except ConversionFailed:
-        pass
-    else:
-        raise AssertionError('ConversionFailed was not raised')
+    assert_raises(
+        ConversionFailed,
+        lambda: convert(file_path, converter=_converter),
+    )
 
 
 def test_fall_back():
