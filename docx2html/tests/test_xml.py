@@ -16,6 +16,7 @@ from docx2html.tests import (
     DOCUMENT_DRAWING_TEMPLATE,
     DOCUMENT_LI_TEMPLATE,
     DOCUMENT_PICT_TEMPLATE,
+    DOCUMENT_PICT_NO_IMAGEID_TEMPLATE,
     DOCUMENT_P_TEMPLATE,
     DOCUMENT_TBL_TEMPLATE,
     DOCUMENT_TC_TEMPLATE,
@@ -402,3 +403,23 @@ class PictImageTestCase(_TranslationTestCase):
         pict_tag = pict_tags[0]
         image_id = get_image_id(pict_tag)
         self.assertEqual(image_id, 'rId0')
+
+
+class PictImageTestCase(_TranslationTestCase):
+    expected_output = '''
+        <html/>
+    '''
+
+    def get_xml(self):
+        pict = DOCUMENT_PICT_NO_IMAGEID_TEMPLATE
+        tags = [
+            pict,
+        ]
+        body = ''
+        for el in tags:
+            body += el
+
+        xml = DOCUMENT_XML_TEMPLATE % {
+            'body': body,
+        }
+        return etree.fromstring(xml)
