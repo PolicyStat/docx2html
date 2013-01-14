@@ -1,15 +1,18 @@
-from __future__ import with_statement
 import tempfile
 import shutil
 from os import path
 from zipfile import ZipFile
 from nose.plugins.skip import SkipTest
+from nose.tools import assert_raises
 
 from docx2html.tests import collapse_html
 from docx2html import convert
 from docx2html.core import (
     _get_document_data,
     DETECT_FONT_SIZE,
+)
+from docx2html.exceptions import (
+    ConversionFailed,
 )
 
 
@@ -694,3 +697,26 @@ def test_has_title():
     )
     actual_html = convert(file_path)
     assert_html_equal(actual_html, '''<html><p>Text</p></html>''')
+
+
+def _converter(*args, **kwargs):
+    # Having a converter that does nothing is the same as if abiword fails to
+    # convert.
+    pass
+
+
+def test_converter_broken():
+    file_path = 'test.doc'
+    assert_raises(
+        ConversionFailed,
+        lambda: convert(file_path, converter=_converter),
+    )
+
+
+def test_fall_back():
+    file_path = 'test.doc'
+
+    def fall_back(*args, **kwargs):
+        return 'success'
+    html = convert(file_path, fall_back=fall_back, converter=_converter)
+    assert html == 'success'
