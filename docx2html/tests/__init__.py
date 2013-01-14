@@ -13,6 +13,10 @@ DOCUMENT_XML_TEMPLATE = """
 </w:document>
 """.strip()
 
+DOCUMENT_T_TEMPLATE = """
+<w:t>%(text)s</w:t>
+"""
+
 DOCUMENT_P_TEMPLATE = """
     <w:p>
         <w:pPr>
@@ -20,7 +24,7 @@ DOCUMENT_P_TEMPLATE = """
         </w:pPr>
         <w:r>
             <w:rPr/>
-            <w:t>%(text)s</w:t>
+            %(text)s
         </w:r>
     </w:p>
 """.strip()
@@ -36,7 +40,7 @@ DOCUMENT_LI_TEMPLATE = """
         </w:pPr>
         <w:r>
             <w:rPr/>
-            <w:t>%(text)s</w:t>
+            %(text)s
         </w:r>
     </w:p>
 """.strip()
@@ -65,7 +69,7 @@ DOCUMENT_TC_TEMPLATE = """
             </w:pPr>
             <w:r>
                 <w:rPr/>
-                <w:t>%(text)s</w:t>
+                %(text)s
             </w:r>
         </w:p>
     </w:tc>

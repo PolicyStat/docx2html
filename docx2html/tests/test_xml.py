@@ -18,11 +18,18 @@ from docx2html.tests import (
     DOCUMENT_PICT_TEMPLATE,
     DOCUMENT_PICT_NO_IMAGEID_TEMPLATE,
     DOCUMENT_P_TEMPLATE,
+    DOCUMENT_T_TEMPLATE,
     DOCUMENT_TBL_TEMPLATE,
     DOCUMENT_TC_TEMPLATE,
     DOCUMENT_TR_TEMPLATE,
     DOCUMENT_XML_TEMPLATE,
 )
+
+
+def _create_t_tag(text):
+    return DOCUMENT_T_TEMPLATE % {
+        'text': text,
+    }
 
 
 def _create_li(text, ilvl, numId):
@@ -74,6 +81,7 @@ class SimpleListTestCase(_TranslationTestCase):
         ]
         lis = ''
         for text, ilvl, numId in li_text:
+            text = _create_t_tag(text)
             lis += _create_li(text=text, ilvl=ilvl, numId=numId)
 
         xml = DOCUMENT_XML_TEMPLATE % {
@@ -115,15 +123,15 @@ class TableInListTestCase(_TranslationTestCase):
 
     def get_xml(self):
         table = _create_table(num_rows=2, num_columns=2, text=chain(
-            ['AAA'],
-            ['BBB'],
-            ['CCC'],
-            ['DDD'],
+            [_create_t_tag('AAA')],
+            [_create_t_tag('BBB')],
+            [_create_t_tag('CCC')],
+            [_create_t_tag('DDD')],
         ))
 
         # Nest that table in a list.
-        first_li = _create_li(text='AAA', ilvl=0, numId=1)
-        second = _create_li(text='BBB', ilvl=0, numId=1)
+        first_li = _create_li(text=_create_t_tag('AAA'), ilvl=0, numId=1)
+        second = _create_li(text=_create_t_tag('BBB'), ilvl=0, numId=1)
         body = ''
         for el in [first_li, table, second]:
             body += el
@@ -186,6 +194,7 @@ class RomanNumeralToHeadingTestCase(_TranslationTestCase):
         ]
         lis = ''
         for text, ilvl, numId in li_text:
+            text = _create_t_tag(text)
             lis += _create_li(text=text, ilvl=ilvl, numId=numId)
 
         xml = DOCUMENT_XML_TEMPLATE % {
@@ -333,19 +342,19 @@ class ListWithContinuationTestCase(_TranslationTestCase):
 
     def get_xml(self):
         table = _create_table(num_rows=2, num_columns=2, text=chain(
-            ['DDD'],
-            ['EEE'],
-            ['FFF'],
-            ['GGG'],
+            [_create_t_tag('DDD')],
+            [_create_t_tag('EEE')],
+            [_create_t_tag('FFF')],
+            [_create_t_tag('GGG')],
         ))
         tags = [
-            _create_li(text='AAA', ilvl=0, numId=1),
+            _create_li(text=_create_t_tag('AAA'), ilvl=0, numId=1),
             DOCUMENT_P_TEMPLATE % {
-                'text': 'BBB',
+                'text': _create_t_tag('BBB'),
             },
-            _create_li(text='CCC', ilvl=0, numId=1),
+            _create_li(text=_create_t_tag('CCC'), ilvl=0, numId=1),
             table,
-            _create_li(text='HHH', ilvl=0, numId=1),
+            _create_li(text=_create_t_tag('HHH'), ilvl=0, numId=1),
         ]
         body = ''
         for el in tags:
