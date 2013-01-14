@@ -1169,6 +1169,19 @@ def get_zip_file_handler(file_path):
 
 
 def convert(file_path, image_handler=None, fall_back=None, converter=None):
+    """
+    ``file_path`` is a path to the file on the file system that you want to be
+        converted to html.
+    ``image_handler`` is a function that takes an image_id and a
+        relationship_dict to generate the src attribute for images. (see readme
+        for more details)
+    ``fall_back`` is a function that takes a ``file_path``. This function will
+        only be called if for whatever reason the conversion fails.
+    ``converter`` is a function to convert a document that is not docx to docx
+        (examples in docx2html.converters)
+
+    Returns html extracted from ``file_path``
+    """
     file_base, extension = os.path.splitext(os.path.basename(file_path))
 
     if extension == '.html':
