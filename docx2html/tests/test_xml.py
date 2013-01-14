@@ -32,6 +32,13 @@ def _create_t_tag(text):
     }
 
 
+def _create_p_tag(text):
+    t_tag = _create_t_tag(text)
+    return DOCUMENT_P_TEMPLATE % {
+        'text': t_tag,
+    }
+
+
 def _create_li(text, ilvl, numId):
     return DOCUMENT_LI_TEMPLATE % {
         'text': text,
@@ -43,7 +50,7 @@ def _create_li(text, ilvl, numId):
 def _create_table(num_rows, num_columns, text):
     def _create_tc(cell_value):
         return DOCUMENT_TC_TEMPLATE % {
-            'text': cell_value,
+            'p_tag': cell_value,
         }
 
     def _create_tr(rows, text):
@@ -123,10 +130,10 @@ class TableInListTestCase(_TranslationTestCase):
 
     def get_xml(self):
         table = _create_table(num_rows=2, num_columns=2, text=chain(
-            [_create_t_tag('AAA')],
-            [_create_t_tag('BBB')],
-            [_create_t_tag('CCC')],
-            [_create_t_tag('DDD')],
+            [_create_p_tag('AAA')],
+            [_create_p_tag('BBB')],
+            [_create_p_tag('CCC')],
+            [_create_p_tag('DDD')],
         ))
 
         # Nest that table in a list.
@@ -342,10 +349,10 @@ class ListWithContinuationTestCase(_TranslationTestCase):
 
     def get_xml(self):
         table = _create_table(num_rows=2, num_columns=2, text=chain(
-            [_create_t_tag('DDD')],
-            [_create_t_tag('EEE')],
-            [_create_t_tag('FFF')],
-            [_create_t_tag('GGG')],
+            [_create_p_tag('DDD')],
+            [_create_p_tag('EEE')],
+            [_create_p_tag('FFF')],
+            [_create_p_tag('GGG')],
         ))
         tags = [
             _create_li(text=_create_t_tag('AAA'), ilvl=0, numId=1),
@@ -430,5 +437,36 @@ class PictImageTestCase(_TranslationTestCase):
 
         xml = DOCUMENT_XML_TEMPLATE % {
             'body': body,
+        }
+        return etree.fromstring(xml)
+
+
+class TableWithInvalidTag(_TranslationTestCase):
+    expected_output = '''
+        <html>
+            <table>
+                <tr>
+                    <td>AAA</td>
+                    <td>BBB</td>
+                </tr>
+                <tr>
+                    <td/>
+                    <td>DDD</td>
+                </tr>
+            </table>
+        </html>
+    '''
+
+    def get_xml(self):
+        table = _create_table(num_rows=2, num_columns=2, text=chain(
+            [_create_p_tag('AAA')],
+            [_create_p_tag('BBB')],
+            # This tag may have CCC in it, however this tag has no meaning
+            # pertaining to content.
+            ['<w:invalidTag>CCC</w:invalidTag>'],
+            [_create_p_tag('DDD')],
+        ))
+        xml = DOCUMENT_XML_TEMPLATE % {
+            'body': table,
         }
         return etree.fromstring(xml)
