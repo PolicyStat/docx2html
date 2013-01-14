@@ -63,15 +63,7 @@ DOCUMENT_TC_TEMPLATE = """
                 <w:right w:type="dxa" w:w="55"/>
             </w:tcMar>
         </w:tcPr>
-        <w:p>
-            <w:pPr>
-                <w:pStyle w:val="style21"/>
-            </w:pPr>
-            <w:r>
-                <w:rPr/>
-                %(text)s
-            </w:r>
-        </w:p>
+        %(p_tag)s
     </w:tc>
 """.strip()
 
