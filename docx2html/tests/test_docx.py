@@ -1,3 +1,4 @@
+import mock
 import tempfile
 import shutil
 from os import path
@@ -720,3 +721,27 @@ def test_fall_back():
         return 'success'
     html = convert(file_path, fall_back=fall_back, converter=_converter)
     assert html == 'success'
+
+
+@mock.patch('docx2html.core.read_html_file')
+@mock.patch('docx2html.core.get_zip_file_handler')
+def test_html_files(patch_zip_handler, patch_read):
+    def raise_assertion(*args, **kwargs):
+        raise AssertionError('Should not have called get_zip_file_handler')
+    patch_zip_handler.side_effect = raise_assertion
+
+    def return_text(*args, **kwargs):
+        return 'test'
+    patch_read.side_effect = return_text
+
+    # Try with an html file
+    file_path = 'test.html'
+
+    html = convert(file_path)
+    assert html == 'test'
+
+    # Try again with an htm file.
+    file_path = 'test.htm'
+
+    html = convert(file_path)
+    assert html == 'test'
