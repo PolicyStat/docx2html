@@ -1171,6 +1171,12 @@ def get_zip_file_handler(file_path):
     return ZipFile(file_path)
 
 
+def read_html_file(file_path):
+    with open(file_path) as f:
+        html = f.read()
+    return html
+
+
 def convert(file_path, image_handler=None, fall_back=None, converter=None):
     """
     ``file_path`` is a path to the file on the file system that you want to be
@@ -1187,10 +1193,8 @@ def convert(file_path, image_handler=None, fall_back=None, converter=None):
     """
     file_base, extension = os.path.splitext(os.path.basename(file_path))
 
-    if extension == '.html':
-        with open(file_path) as f:
-            html = f.read()
-        return html
+    if extension == '.html' or extension == '.htm':
+        return read_html_file(file_path)
 
     # Create the converted file as a file in the same dir with the
     # same name only with a .docx extension
