@@ -40,6 +40,7 @@ def _create_p_tag(text):
 
 
 def _create_li(text, ilvl, numId):
+    text = _create_t_tag(text)
     return DOCUMENT_LI_TEMPLATE % {
         'text': text,
         'ilvl': ilvl,
@@ -88,7 +89,6 @@ class SimpleListTestCase(_TranslationTestCase):
         ]
         lis = ''
         for text, ilvl, numId in li_text:
-            text = _create_t_tag(text)
             lis += _create_li(text=text, ilvl=ilvl, numId=numId)
 
         xml = DOCUMENT_XML_TEMPLATE % {
@@ -137,8 +137,8 @@ class TableInListTestCase(_TranslationTestCase):
         ))
 
         # Nest that table in a list.
-        first_li = _create_li(text=_create_t_tag('AAA'), ilvl=0, numId=1)
-        second = _create_li(text=_create_t_tag('BBB'), ilvl=0, numId=1)
+        first_li = _create_li(text='AAA', ilvl=0, numId=1)
+        second = _create_li(text='BBB', ilvl=0, numId=1)
         body = ''
         for el in [first_li, table, second]:
             body += el
@@ -201,7 +201,6 @@ class RomanNumeralToHeadingTestCase(_TranslationTestCase):
         ]
         lis = ''
         for text, ilvl, numId in li_text:
-            text = _create_t_tag(text)
             lis += _create_li(text=text, ilvl=ilvl, numId=numId)
 
         xml = DOCUMENT_XML_TEMPLATE % {
@@ -355,13 +354,13 @@ class ListWithContinuationTestCase(_TranslationTestCase):
             [_create_p_tag('GGG')],
         ))
         tags = [
-            _create_li(text=_create_t_tag('AAA'), ilvl=0, numId=1),
+            _create_li(text='AAA', ilvl=0, numId=1),
             DOCUMENT_P_TEMPLATE % {
                 'text': _create_t_tag('BBB'),
             },
-            _create_li(text=_create_t_tag('CCC'), ilvl=0, numId=1),
+            _create_li(text='CCC', ilvl=0, numId=1),
             table,
-            _create_li(text=_create_t_tag('HHH'), ilvl=0, numId=1),
+            _create_li(text='HHH', ilvl=0, numId=1),
         ]
         body = ''
         for el in tags:
