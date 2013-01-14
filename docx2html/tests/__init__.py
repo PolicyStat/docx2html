@@ -187,6 +187,27 @@ DOCUMENT_PICT_TEMPLATE = """
 """.strip()
 
 
+DOCUMENT_PICT_NO_IMAGEID_TEMPLATE = """
+    <w:p w:rsidR="00E94BDC" w:rsidRPr="003638EA" w:rsidRDefault="00E94BDC" w:rsidP="00E94BDC">
+        <w:pPr>
+            <w:rPr>
+                <w:color w:val="000000"/>
+            </w:rPr>
+        </w:pPr>
+        <w:r w:rsidR="00360165">
+            <w:rPr>
+                <w:b/>
+                <w:color w:val="000000"/>
+            </w:rPr>
+            <w:pict>
+                <v:shape id="_x0000_i1027" type="#_x0000_t75" style="width:99.75pt;height:116.25pt">
+                </v:shape>
+            </w:pict>
+        </w:r>
+    </w:p>
+""".strip()
+
+
 def assert_html_equal(actual_html, expected_html):
     assert collapse_html(
         actual_html,

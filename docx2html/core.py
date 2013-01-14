@@ -1144,6 +1144,9 @@ def get_p_data(p, meta_data, is_td=False):
                 p_text += '<br />'
             else:  # We have an image
                 image_id = get_image_id(child)
+                if image_id not in meta_data.relationship_dict:
+                    # This image does not have an image_id
+                    continue
                 src = meta_data.image_handler(
                     image_id,
                     meta_data.relationship_dict,
