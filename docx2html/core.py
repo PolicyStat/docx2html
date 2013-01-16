@@ -1294,4 +1294,8 @@ def create_html(tree, meta_data):
 
         # Keep track of visited_nodes
         visited_nodes.append(el)
-    return etree.tostring(new_html)
+    return etree.tostring(
+        new_html,
+        method='html',
+        with_tail=True,
+    )
