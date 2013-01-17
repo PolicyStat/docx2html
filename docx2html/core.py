@@ -979,7 +979,7 @@ def get_tr_data(tr, meta_data, row_spans):
                     )
                     texts.append(text)
 
-            data = '<br/>'.join(texts)
+            data = '<br/>'.join(t for t in texts if t is not None)
             td_el = etree.XML('<td>%s</td>' % data)
             # if there is a colspan then set it here.
             colspan = get_grid_span(el)
@@ -1294,4 +1294,8 @@ def create_html(tree, meta_data):
 
         # Keep track of visited_nodes
         visited_nodes.append(el)
-    return etree.tostring(new_html)
+    return etree.tostring(
+        new_html,
+        method='html',
+        with_tail=True,
+    )

@@ -242,7 +242,7 @@ def test_nested_table_rowspan():
                             <td>EEE</td>
                         </tr>
                     </table>
-                    <br/>
+                    <br>
                 </td>
             </tr>
         </table>
@@ -279,7 +279,7 @@ def test_nested_tables():
                   <td>GGG</td>
                 </tr>
               </table>
-              <br/>
+              <br>
             </td>
           </tr>
         </table>
@@ -426,7 +426,7 @@ def test_has_image():
     actual_html = convert(new_file_path)
     assert_html_equal(actual_html, '''
     <html>
-    <p>AAA<img src="%s/word/media/image1.gif" height="55" width="260"/></p>
+    <p>AAA<img src="%s/word/media/image1.gif" height="55" width="260"></p>
     </html>
     ''' % dp)
 
@@ -449,7 +449,7 @@ def test_has_image_using_image_handler():
     actual_html = convert(new_file_path, image_handler=image_handler)
     assert_html_equal(actual_html, '''
 
-    <html><p>AAA<img src="test" height="55" width="260"/></p></html>
+    <html><p>AAA<img src="test" height="55" width="260"></p></html>
     ''')
 
 
@@ -606,16 +606,16 @@ def test_shift_enter():
     actual_html = convert(file_path)
     assert_html_equal(actual_html, '''
     <html>
-        <p>AAA<br/>BBB</p>
+        <p>AAA<br>BBB</p>
         <p>CCC</p>
         <ol data-list-type="decimal">
-            <li>DDD<br/>EEE</li>
+            <li>DDD<br>EEE</li>
             <li>FFF</li>
         </ol>
         <table>
             <tr>
-                <td>GGG<br/>HHH</td>
-                <td>III<br/>JJJ</td>
+                <td>GGG<br>HHH</td>
+                <td>III<br>JJJ</td>
             </tr>
             <tr>
                 <td>KKK</td>
