@@ -42,7 +42,7 @@ def _create_p_tag(text, bold=False):
     t_tag = _create_t_tag(text)
     return DOCUMENT_P_TEMPLATE % {
         'text': t_tag,
-        'bold': _bold(bold),
+        'bold': _bold(is_bold=bold),
     }
 
 
@@ -52,7 +52,7 @@ def _create_li(text, ilvl, numId, bold=False):
         'text': text,
         'ilvl': ilvl,
         'numId': numId,
-        'bold': _bold(bold),
+        'bold': _bold(is_bold=bold),
     }
 
 
@@ -395,7 +395,7 @@ class ListWithContinuationTestCase(_TranslationTestCase):
             _create_li(text='AAA', ilvl=0, numId=1),
             DOCUMENT_P_TEMPLATE % {
                 'text': _create_t_tag('BBB'),
-                'bold': _bold(False),
+                'bold': _bold(is_bold=False),
             },
             _create_li(text='CCC', ilvl=0, numId=1),
             table,
