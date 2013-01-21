@@ -23,7 +23,9 @@ DOCUMENT_P_TEMPLATE = """
             <w:pStyle w:val="style0"/>
         </w:pPr>
         <w:r>
-            <w:rPr/>
+            <w:rPr>
+                %(bold)s
+            </w:rPr>
             %(text)s
         </w:r>
     </w:p>
@@ -39,7 +41,9 @@ DOCUMENT_LI_TEMPLATE = """
             </w:numPr>
         </w:pPr>
         <w:r>
-            <w:rPr/>
+            <w:rPr>
+                %(bold)s
+            </w:rPr>
             %(text)s
         </w:r>
     </w:p>
