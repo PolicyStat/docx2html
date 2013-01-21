@@ -157,6 +157,8 @@ def is_natural_header(el, styles_dict):
 
 @ensure_tag(['p'])
 def is_header(el, meta_data):
+    if _is_top_level_upper_roman(el, meta_data):
+        return 'h2'
     el_is_natural_header = is_natural_header(el, meta_data.styles_dict)
     if el_is_natural_header:
         return el_is_natural_header
@@ -192,6 +194,7 @@ def is_header(el, meta_data):
     whole_line_bold, whole_line_italics = whole_line_styled(el)
     if whole_line_bold or whole_line_italics:
         return 'h2'
+
     return False
 
 
@@ -1076,11 +1079,11 @@ def get_p_data(p, meta_data, is_td=False):
     remove_italics = False
     remove_bold = False
 
-    if (
-            not is_td and
-            is_header(p, meta_data) or
-            _is_top_level_upper_roman(p, meta_data)
-            ):
+    # Only remove bold or italics if this tag is an h tag.
+    # Td elements have the same look and feel as p/h elements. Right now we are
+    # never putting h tags in td elements, as such if we are in a td we will
+    # never be stripping bold/italics since that is only done on h tags
+    if not is_td and is_header(p, meta_data):
         # Check to see if the whole line is bold or italics.
         remove_bold, remove_italics = whole_line_styled(p)
 
@@ -1236,60 +1239,47 @@ def create_html(tree, meta_data):
         # visited already.
         if el in visited_nodes:
             continue
-        if el.tag == '%sp' % w_namespace:
-            # If this is true we have a bullet in some list
+        header_value = is_header(el, meta_data)
+        if is_header(el, meta_data):
+            p_text = get_p_data(el, meta_data)
+            if p_text == '':
+                continue
+            new_html.append(
+                etree.XML('<%s>%s</%s>' % (
+                    header_value,
+                    p_text,
+                    header_value,
+                ))
+            )
+        elif el.tag == '%sp' % w_namespace:
+            # Strip out titles.
+            if is_title(el):
+                continue
             if is_li(el, meta_data):
-                # This should be a header instead.
-                if _is_top_level_upper_roman(el, meta_data):
-                    p_text = get_p_data(el, meta_data)
-                    new_html.append(
-                        etree.XML('<h2>%s</h2>' % p_text)
-                    )
-                    continue
                 # Parse out the needed info from the node.
                 li_nodes = get_li_nodes(el, meta_data)
-                list_el, list_visited_nodes = get_list_data(
+                new_el, list_visited_nodes = get_list_data(
                     li_nodes,
                     meta_data,
                 )
                 visited_nodes.extend(list_visited_nodes)
-                new_html.append(list_el)
-                continue
+            # Handle generic p tag here.
+            else:
+                p_text = get_p_data(el, meta_data)
+                # If there is not text do not add an empty tag.
+                if p_text == '':
+                    continue
 
-        if el.tag == '%stbl' % w_namespace:
+                new_el = etree.XML('<p>%s</p>' % p_text)
+            new_html.append(new_el)
+
+        elif el.tag == '%stbl' % w_namespace:
             table_el, table_visited_nodes = get_table_data(
                 el,
                 meta_data,
             )
             visited_nodes.extend(table_visited_nodes)
             new_html.append(table_el)
-            continue
-
-        # Handle generic p tag here.
-        if el.tag == '%sp' % w_namespace:
-            # Strip out titles.
-            if is_title(el):
-                continue
-
-            # If there is not text do not add an empty tag.
-            p_text = get_p_data(el, meta_data)
-            if p_text == '':
-                continue
-
-            # Check to see if its a header
-            header_value = is_header(el, meta_data)
-            if header_value:
-                # Make a header based of the header_value
-                new_html.append(
-                    etree.XML('<%s>%s</%s>' % (
-                        header_value,
-                        p_text,
-                        header_value,
-                    ))
-                )
-            else:
-                # Make a paragraph
-                new_html.append(etree.XML('<p>%s</p>' % p_text))
             continue
 
         # Keep track of visited_nodes
