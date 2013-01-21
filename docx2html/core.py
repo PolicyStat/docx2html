@@ -1075,14 +1075,14 @@ def get_p_data(p, meta_data, is_td=False):
     """
     remove_italics = False
     remove_bold = False
-    if not is_td and not is_li(p, meta_data):
-        # Check to see if the whole line is bold or italics.
-        whole_line_bold, whole_line_italics = whole_line_styled(p)
-        p_is_header = bool(is_header(p, meta_data) and not is_li(p, meta_data))
 
-        # Only remove bold or italics if this tag is an h tag.
-        remove_bold = p_is_header and whole_line_bold
-        remove_italics = p_is_header and whole_line_italics
+    if (
+            not is_td and
+            is_header(p, meta_data) or
+            _is_top_level_upper_roman(p, meta_data)
+            ):
+        # Check to see if the whole line is bold or italics.
+        remove_bold, remove_italics = whole_line_styled(p)
 
     p_text = ''
     w_namespace = get_namespace(p, 'w')
