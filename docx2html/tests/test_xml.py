@@ -32,19 +32,27 @@ def _create_t_tag(text):
     }
 
 
-def _create_p_tag(text):
+def _bold(is_bold):
+    if is_bold:
+        return '<w:b/>'
+    return ''
+
+
+def _create_p_tag(text, bold=False):
     t_tag = _create_t_tag(text)
     return DOCUMENT_P_TEMPLATE % {
         'text': t_tag,
+        'bold': _bold(is_bold=bold),
     }
 
 
-def _create_li(text, ilvl, numId):
+def _create_li(text, ilvl, numId, bold=False):
     text = _create_t_tag(text)
     return DOCUMENT_LI_TEMPLATE % {
         'text': text,
         'ilvl': ilvl,
         'numId': numId,
+        'bold': _bold(is_bold=bold),
     }
 
 
@@ -232,6 +240,36 @@ class RomanNumeralToHeadingTestCase(_TranslationTestCase):
         )
 
 
+class RomanNumeralToHeadingAllBoldTestCase(_TranslationTestCase):
+    numbering_dict = {
+        '1': {
+            0: 'upperRoman',
+        }
+    }
+    expected_output = '''
+        <html>
+            <h2>AAA</h2>
+            <h2>BBB</h2>
+            <h2>CCC</h2>
+        </html>
+    '''
+
+    def get_xml(self):
+        li_text = [
+            ('AAA', 0, 1),
+            ('BBB', 0, 1),
+            ('CCC', 0, 1),
+        ]
+        lis = ''
+        for text, ilvl, numId in li_text:
+            lis += _create_li(text=text, ilvl=ilvl, numId=numId, bold=True)
+
+        xml = DOCUMENT_XML_TEMPLATE % {
+            'body': lis,
+        }
+        return etree.fromstring(xml)
+
+
 class ImageTestCase(_TranslationTestCase):
     relationship_dict = {
         'rId0': 'media/image1.jpeg',
@@ -357,6 +395,7 @@ class ListWithContinuationTestCase(_TranslationTestCase):
             _create_li(text='AAA', ilvl=0, numId=1),
             DOCUMENT_P_TEMPLATE % {
                 'text': _create_t_tag('BBB'),
+                'bold': _bold(is_bold=False),
             },
             _create_li(text='CCC', ilvl=0, numId=1),
             table,

@@ -700,6 +700,23 @@ def test_has_title():
     assert_html_equal(actual_html, '''<html><p>Text</p></html>''')
 
 
+def test_upper_alpha_all_bold():
+    file_path = path.join(
+        path.abspath(path.dirname(__file__)),
+        '..',
+        'fixtures',
+        'upper_alpha_all_bold.docx',
+    )
+    actual_html = convert(file_path)
+    assert_html_equal(actual_html, '''
+    <html>
+        <h2>AAA</h2>
+        <h2>BBB</h2>
+        <h2>CCC</h2>
+    </html>
+    ''')
+
+
 def _converter(*args, **kwargs):
     # Having a converter that does nothing is the same as if abiword fails to
     # convert.
