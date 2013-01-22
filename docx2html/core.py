@@ -12,6 +12,7 @@ from docx2html.exceptions import (
     ConversionFailed,
     FileNotDocx,
     MalformedDocx,
+    UnintendedTag,
 )
 
 DETECT_FONT_SIZE = False
@@ -865,36 +866,56 @@ def get_list_data(li_nodes, meta_data):
     # Store the first list created (the root list) for the return value.
     root_ol = None
     visited_nodes = []
-    texts = []
+    list_contents = []
 
-    # Helper function
-    def _build_li(texts):
-        data = '<br/>'.join(t for t in texts if t is not None)
+    def _build_li(list_contents):
+        data = '<br />'.join(t for t in list_contents if t is not None)
         return etree.XML('<li>%s</li>' % data), []
+
+    def _build_non_li_content(el, meta_data):
+        w_namespace = get_namespace(el, 'w')
+        if el.tag == '%stbl' % w_namespace:
+            new_el, visited_nodes = get_table_data(el, meta_data)
+            return etree.tostring(new_el), visited_nodes
+        elif el.tag == '%sp' % w_namespace:
+            return get_p_data(el, meta_data), [el]
+        if has_text(el):
+            raise UnintendedTag('Did not expect %s' % el.tag)
+
+    def _merge_lists(ilvl, current_ilvl, ol_dict, current_ol):
+        for i in reversed(range(ilvl, current_ilvl)):
+            # Any list that is more indented that ilvl needs to
+            # be merged to the list before it.
+            if i not in ol_dict:
+                continue
+            if ol_dict[i] is not current_ol:
+                if ol_dict[i] is current_ol:
+                    continue
+                ol_dict[i][-1].append(current_ol)
+                current_ol = ol_dict[i]
+
+        # Clean up finished nested lists.
+        for key in list(ol_dict):
+            if key > ilvl:
+                del ol_dict[key]
+        return current_ol
 
     for li_node in li_nodes:
         w_namespace = get_namespace(li_node, 'w')
         if not is_li(li_node, meta_data):
-            if li_node.tag == '%stbl' % w_namespace:
-                table_el, el_visited_nodes = get_table_data(li_node, meta_data)
-                texts.append(etree.tostring(table_el))
-            elif li_node.tag == '%sp' % w_namespace:
-                # This is a simple paragraph
-                texts.append(get_p_data(
-                    li_node,
-                    meta_data,
-                ))
-                el_visited_nodes = [li_node]
-            else:
-                # I don't know what this tag is.
-                continue
+            # Get the content and visited nodes
+            new_el, el_visited_nodes = _build_non_li_content(
+                li_node,
+                meta_data,
+            )
+            list_contents.append(new_el)
             visited_nodes.extend(el_visited_nodes)
             continue
-        elif texts != []:
-            li_el, texts = _build_li(texts)
+        if list_contents:
+            li_el, list_contents = _build_li(list_contents)
             current_ol.append(li_el)
         # Get the data needed to build the current list item
-        texts.append(get_p_data(
+        list_contents.append(get_p_data(
             li_node,
             meta_data,
         ))
@@ -916,21 +937,12 @@ def get_list_data(li_nodes, meta_data):
         # than ilvl and then remove them from the ol_dict
         else:
             # Merge any nested lists that need to be merged.
-            for i in reversed(range(ilvl, current_ilvl)):
-                # Any list that is more indented that ilvl needs to
-                # be merged to the list before it.
-                if i not in ol_dict:
-                    continue
-                if ol_dict[i] is not current_ol:
-                    if ol_dict[i] is current_ol:
-                        continue
-                    ol_dict[i][-1].append(current_ol)
-                    current_ol = ol_dict[i]
-
-            # Clean up finished nested lists.
-            for key in list(ol_dict):
-                if key > ilvl:
-                    del ol_dict[key]
+            current_ol = _merge_lists(
+                ilvl=ilvl,
+                current_ilvl=current_ilvl,
+                ol_dict=ol_dict,
+                current_ol=current_ol,
+            )
 
         # Set the root list after the first list is created.
         if root_ol is None:
@@ -951,21 +963,17 @@ def get_list_data(li_nodes, meta_data):
         # Create the li element.
         visited_nodes.extend(list(li_node.iter()))
 
-    if texts != []:
-        li_el, texts = _build_li(texts)
+    if list_contents:
+        li_el, list_contents = _build_li(list_contents)
         current_ol.append(li_el)
 
     # Merge up any nested lists that have not been merged.
-    for i in reversed(range(0, current_ilvl)):
-        if i not in ol_dict:
-            continue
-        # If we do not do this check it is possible to create an infinite loop
-        # in etree.
-        if ol_dict[i] is current_ol:
-            continue
-        # append the current ol to the end of the last li tag.
-        ol_dict[i][-1].append(current_ol)
-        current_ol = ol_dict[i]
+    current_ol = _merge_lists(
+        ilvl=0,
+        current_ilvl=current_ilvl,
+        ol_dict=ol_dict,
+        current_ol=current_ol,
+    )
 
     return root_ol, visited_nodes
 
@@ -1033,7 +1041,7 @@ def get_tr_data(tr, meta_data, row_spans):
                     )
                     texts.append(text)
 
-            data = '<br/>'.join(t for t in texts if t is not None)
+            data = '<br />'.join(t for t in texts if t is not None)
             td_el = etree.XML('<td>%s</td>' % data)
             # if there is a colspan then set it here.
             colspan = get_grid_span(el)
