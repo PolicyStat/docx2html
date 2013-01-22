@@ -9,6 +9,7 @@ from docx2html.core import (
     get_image_id,
     get_li_nodes,
     get_namespace,
+    is_last_li,
 )
 from docx2html.tests import (
     assert_html_equal,
@@ -113,42 +114,53 @@ class SimpleListTestCase(_TranslationTestCase):
         li_data = get_li_nodes(first_p_tag, meta_data)
         assert len(list(li_data)) == 3
 
+    def test_is_last_li(self):
+        tree = self.get_xml()
+        meta_data = self.get_meta_data()
+        p_tags = tree.xpath('.//w:p', namespaces=tree.nsmap)
+        result = [is_last_li(p, meta_data, current_numId='1') for p in p_tags]
+        self.assertEqual(
+            result,
+            [False, False, True],
+        )
+
 
 class TableInListTestCase(_TranslationTestCase):
     expected_output = '''
         <html>
             <ol data-list-type="decimal">
-                <li>AAA</li>
+                <li>AAA<br>
+                    <table>
+                        <tr>
+                            <td>BBB</td>
+                            <td>CCC</td>
+                        </tr>
+                        <tr>
+                            <td>DDD</td>
+                            <td>EEE</td>
+                        </tr>
+                    </table>
+                </li>
+                <li>FFF</li>
             </ol>
-            <table>
-                <tr>
-                    <td>AAA</td>
-                    <td>BBB</td>
-                </tr>
-                <tr>
-                    <td>CCC</td>
-                    <td>DDD</td>
-                </tr>
-            </table>
-            <ol data-list-type="decimal">
-                <li>BBB</li>
-            </ol>
+            <p>GGG</p>
         </html>
     '''
 
     def get_xml(self):
         table = _create_table(num_rows=2, num_columns=2, text=chain(
-            [_create_p_tag('AAA')],
             [_create_p_tag('BBB')],
             [_create_p_tag('CCC')],
             [_create_p_tag('DDD')],
+            [_create_p_tag('EEE')],
         ))
 
         # Nest that table in a list.
         first_li = _create_li(text='AAA', ilvl=0, numId=1)
-        second = _create_li(text='BBB', ilvl=0, numId=1)
+        second = _create_li(text='FFF', ilvl=0, numId=1)
+        p_tag = _create_p_tag('GGG')
         body = ''
-        for el in [first_li, table, second]:
+        for el in [first_li, table, second, p_tag]:
             body += el
         xml = DOCUMENT_XML_TEMPLATE % {
             'body': body,
@@ -165,7 +177,17 @@ class TableInListTestCase(_TranslationTestCase):
         # Currently, the nest should be split (two lists instead of one with a
         # nested table in it)
         li_data = get_li_nodes(first_p_tag, meta_data)
-        assert len(list(li_data)) == 1
+        assert len(list(li_data)) == 3
+
+    def test_is_last_li(self):
+        tree = self.get_xml()
+        meta_data = self.get_meta_data()
+        result = [is_last_li(el, meta_data, current_numId='1') for el in tree]
+        self.assertEqual(
+            result,
+            # None list items are ignored
+            [False, False, True, False],
+        )
 
 
 class RomanNumeralToHeadingTestCase(_TranslationTestCase):
@@ -362,23 +384,19 @@ class ListWithContinuationTestCase(_TranslationTestCase):
     expected_output = '''
         <html>
             <ol data-list-type="decimal">
-                <li>AAA</li>
-            </ol>
-            <p>BBB</p>
-            <ol data-list-type="decimal">
-                <li>CCC</li>
-            </ol>
-            <table>
-                <tr>
-                    <td>DDD</td>
-                    <td>EEE</td>
-                </tr>
-                <tr>
-                    <td>FFF</td>
-                    <td>GGG</td>
-                </tr>
-            </table>
-            <ol data-list-type="decimal">
+                <li>AAA<br>BBB</li>
+                <li>CCC<br>
+                    <table>
+                        <tr>
+                            <td>DDD</td>
+                            <td>EEE</td>
+                        </tr>
+                        <tr>
+                            <td>FFF</td>
+                            <td>GGG</td>
+                        </tr>
+                    </table>
+                </li>
                 <li>HHH</li>
             </ol>
         </html>
