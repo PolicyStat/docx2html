@@ -324,19 +324,18 @@ def test_tables_in_lists():
     <html>
         <ol data-list-type="decimal">
             <li>AAA</li>
-            <li>BBB</li>
-        </ol>
-        <table>
-            <tr>
-                <td>CCC</td>
-                <td>DDD</td>
-            </tr>
-            <tr>
-                <td>EEE</td>
-                <td>FFF</td>
-            </tr>
-        </table>
-        <ol data-list-type="decimal">
+            <li>BBB<br>
+                <table>
+                    <tr>
+                        <td>CCC</td>
+                        <td>DDD</td>
+                    </tr>
+                    <tr>
+                        <td>EEE</td>
+                        <td>FFF</td>
+                    </tr>
+                </table>
+            </li>
             <li>GGG</li>
         </ol>
     </html>
