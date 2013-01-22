@@ -237,7 +237,7 @@ def has_text(p):
     this is the case we do not want that tag interfering with things like
     lists. Detect if this tag has any content.
     """
-    return etree.tostring(p, encoding=unicode, method='text') != ''
+    return '' != etree.tostring(p, encoding=unicode, method='text')
 
 
 def is_last_li(li, meta_data, current_numId):
@@ -871,7 +871,7 @@ def get_list_data(li_nodes, meta_data):
 
     def _build_li(list_contents):
         data = '<br />'.join(t for t in list_contents if t is not None)
-        return etree.XML('<li>%s</li>' % data), []
+        return etree.XML('<li>%s</li>' % data)
 
     def _build_non_li_content(el, meta_data):
         w_namespace = get_namespace(el, 'w')
@@ -913,7 +913,8 @@ def get_list_data(li_nodes, meta_data):
             visited_nodes.extend(el_visited_nodes)
             continue
         if list_contents:
-            li_el, list_contents = _build_li(list_contents)
+            li_el = _build_li(list_contents)
+            list_contents = []
             current_ol.append(li_el)
         # Get the data needed to build the current list item
         list_contents.append(get_p_data(
@@ -964,8 +965,12 @@ def get_list_data(li_nodes, meta_data):
         # Create the li element.
         visited_nodes.extend(list(li_node.iter()))
 
+    # If a list item is the last thing in a document, then you will need to add
+    # it here. Should probably figure out how to get the above logic to deal
+    # with it.
     if list_contents:
-        li_el, list_contents = _build_li(list_contents)
+        li_el = _build_li(list_contents)
+        list_contents = []
         current_ol.append(li_el)
 
     # Merge up any nested lists that have not been merged.
@@ -1349,7 +1354,10 @@ def create_html(tree, meta_data):
         method='html',
         with_tail=True,
     )
+    return _make_void_elements_self_close(result)
 
+
+def _make_void_elements_self_close(html):
     #XXX Hack not sure how to get etree to do this by default.
     void_tags = [
         r'br',
@@ -1357,9 +1365,9 @@ def create_html(tree, meta_data):
     ]
     for tag in void_tags:
         regex = re.compile(r'<%s.*?>' % tag)
-        matches = regex.findall(result)
+        matches = regex.findall(html)
         for match in matches:
             new_tag = match.strip('<>')
             new_tag = '<%s />' % new_tag
-            result = re.sub(match, new_tag, result)
-    return result
+            html = re.sub(match, new_tag, html)
+    return html

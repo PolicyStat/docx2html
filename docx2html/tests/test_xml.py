@@ -174,8 +174,7 @@ class TableInListTestCase(_TranslationTestCase):
         w_namespace = get_namespace(tree, 'w')
         first_p_tag = tree.find('%sp' % w_namespace)
 
-        # Currently, the nest should be split (two lists instead of one with a
-        # nested table in it)
+        # Show that list nesting deals with the table nesting
         li_data = get_li_nodes(first_p_tag, meta_data)
         assert len(list(li_data)) == 3
 
