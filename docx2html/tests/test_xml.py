@@ -304,10 +304,10 @@ class ImageTestCase(_TranslationTestCase):
     expected_output = '''
         <html>
             <p>
-                <img src="media/image1.jpeg" height="4" width="4">
+                <img src="media/image1.jpeg" height="4" width="4" />
             </p>
             <p>
-                <img src="media/image2.jpeg" height="4" width="4">
+                <img src="media/image2.jpeg" height="4" width="4" />
             </p>
         </html>
     '''
@@ -371,10 +371,10 @@ class ImageTestCase(_TranslationTestCase):
         assert_html_equal(html, '''
             <html>
                 <p>
-                    <img src="media/image1.jpeg" height="4" width="4">
+                    <img src="media/image1.jpeg" height="4" width="4" />
                 </p>
                 <p>
-                    <img src="media/image2.jpeg" height="6" width="6">
+                    <img src="media/image2.jpeg" height="6" width="6" />
                 </p>
             </html>
         ''')
@@ -439,7 +439,7 @@ class PictImageTestCase(_TranslationTestCase):
     expected_output = '''
         <html>
             <p>
-                <img src="media/image1.jpeg" height="4" width="4">
+                <img src="media/image1.jpeg" height="4" width="4" />
             </p>
         </html>
     '''

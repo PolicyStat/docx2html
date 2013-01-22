@@ -425,7 +425,7 @@ def test_has_image():
     actual_html = convert(new_file_path)
     assert_html_equal(actual_html, '''
     <html>
-    <p>AAA<img src="%s/word/media/image1.gif" height="55" width="260"></p>
+    <p>AAA<img src="%s/word/media/image1.gif" height="55" width="260" /></p>
     </html>
     ''' % dp)
 
@@ -448,7 +448,7 @@ def test_has_image_using_image_handler():
     actual_html = convert(new_file_path, image_handler=image_handler)
     assert_html_equal(actual_html, '''
 
-    <html><p>AAA<img src="test" height="55" width="260"></p></html>
+    <html><p>AAA<img src="test" height="55" width="260" /></p></html>
     ''')
 
 
