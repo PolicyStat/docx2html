@@ -1,6 +1,7 @@
 import cgi
 import os
 import os.path
+import re
 from PIL import Image
 from lxml import etree
 from lxml.etree import XMLSyntaxError
@@ -1343,8 +1344,12 @@ def create_html(tree, meta_data):
 
         # Keep track of visited_nodes
         visited_nodes.append(el)
-    return etree.tostring(
+    result = etree.tostring(
         new_html,
         method='html',
         with_tail=True,
     )
+
+    #XXX Hack not sure how to get etree to do this by default.
+    regex = re.compile(r'<br>')
+    return regex.sub('<br />', result)

@@ -242,7 +242,7 @@ def test_nested_table_rowspan():
                             <td>EEE</td>
                         </tr>
                     </table>
-                    <br>
+                    <br />
                 </td>
             </tr>
         </table>
@@ -279,7 +279,7 @@ def test_nested_tables():
                   <td>GGG</td>
                 </tr>
               </table>
-              <br>
+              <br />
             </td>
           </tr>
         </table>
@@ -324,7 +324,7 @@ def test_tables_in_lists():
     <html>
         <ol data-list-type="decimal">
             <li>AAA</li>
-            <li>BBB<br>
+            <li>BBB<br />
                 <table>
                     <tr>
                         <td>CCC</td>
@@ -605,16 +605,16 @@ def test_shift_enter():
     actual_html = convert(file_path)
     assert_html_equal(actual_html, '''
     <html>
-        <p>AAA<br>BBB</p>
+        <p>AAA<br />BBB</p>
         <p>CCC</p>
         <ol data-list-type="decimal">
-            <li>DDD<br>EEE</li>
+            <li>DDD<br />EEE</li>
             <li>FFF</li>
         </ol>
         <table>
             <tr>
-                <td>GGG<br>HHH</td>
-                <td>III<br>JJJ</td>
+                <td>GGG<br />HHH</td>
+                <td>III<br />JJJ</td>
             </tr>
             <tr>
                 <td>KKK</td>
