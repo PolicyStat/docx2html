@@ -259,6 +259,8 @@ def is_last_li(li, meta_data, current_numId):
         new_numId = get_numId(next_el, w_namespace)
         if current_numId != new_numId:
             return True
+        # If we have gotten here then we have found another list item in the
+        # current list, so ``li`` is not the last li in the list.
         return False
 
 
@@ -289,6 +291,7 @@ def get_li_nodes(li, meta_data):
         if is_last_li(el, meta_data, current_numId):
             new_numId = get_numId(el, w_namespace)
             if current_numId == new_numId:
+                # Not a subsequent list.
                 yield el
             break
 
@@ -863,6 +866,12 @@ def get_list_data(li_nodes, meta_data):
     root_ol = None
     visited_nodes = []
     texts = []
+
+    # Helper function
+    def _build_li(texts):
+        data = '<br/>'.join(t for t in texts if t is not None)
+        return etree.XML('<li>%s</li>' % data), []
+
     for li_node in li_nodes:
         w_namespace = get_namespace(li_node, 'w')
         if not is_li(li_node, meta_data):
@@ -882,10 +891,7 @@ def get_list_data(li_nodes, meta_data):
             visited_nodes.extend(el_visited_nodes)
             continue
         elif texts != []:
-            data = '<br/>'.join(t for t in texts if t is not None)
-            # Reset the texts list
-            texts = []
-            li_el = etree.XML('<li>%s</li>' % data)
+            li_el, texts = _build_li(texts)
             current_ol.append(li_el)
         # Get the data needed to build the current list item
         texts.append(get_p_data(
@@ -946,10 +952,7 @@ def get_list_data(li_nodes, meta_data):
         visited_nodes.extend(list(li_node.iter()))
 
     if texts != []:
-        data = '<br/>'.join(t for t in texts if t is not None)
-        # Reset the texts list
-        texts = []
-        li_el = etree.XML('<li>%s</li>' % data)
+        li_el, texts = _build_li(texts)
         current_ol.append(li_el)
 
     # Merge up any nested lists that have not been merged.
