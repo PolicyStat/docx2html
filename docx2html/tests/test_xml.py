@@ -129,7 +129,7 @@ class TableInListTestCase(_TranslationTestCase):
     expected_output = '''
         <html>
             <ol data-list-type="decimal">
-                <li>AAA<br>
+                <li>AAA<br />
                     <table>
                         <tr>
                             <td>BBB</td>
@@ -384,8 +384,8 @@ class ListWithContinuationTestCase(_TranslationTestCase):
     expected_output = '''
         <html>
             <ol data-list-type="decimal">
-                <li>AAA<br>BBB</li>
-                <li>CCC<br>
+                <li>AAA<br />BBB</li>
+                <li>CCC<br />
                     <table>
                         <tr>
                             <td>DDD</td>
