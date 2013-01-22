@@ -12,3 +12,7 @@ class FileNotDocx(Docx2HtmlException):
 
 class MalformedDocx(Docx2HtmlException):
     pass
+
+
+class UnintendedTag(Docx2HtmlException):
+    pass
