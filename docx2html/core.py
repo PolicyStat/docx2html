@@ -1351,5 +1351,15 @@ def create_html(tree, meta_data):
     )
 
     #XXX Hack not sure how to get etree to do this by default.
-    regex = re.compile(r'<br>')
-    return regex.sub('<br />', result)
+    void_tags = [
+        r'br',
+        r'img',
+    ]
+    for tag in void_tags:
+        regex = re.compile(r'<%s.*?>' % tag)
+        matches = regex.findall(result)
+        for match in matches:
+            new_tag = match.strip('<>')
+            new_tag = '<%s />' % new_tag
+            result = re.sub(match, new_tag, result)
+    return result
