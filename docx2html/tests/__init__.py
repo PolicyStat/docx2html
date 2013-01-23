@@ -17,19 +17,30 @@ DOCUMENT_T_TEMPLATE = """
 <w:t>%(text)s</w:t>
 """
 
+
+DOCUMENT_R_TEMPLATE = """
+<w:r>
+    <w:rPr>
+        %(bold)s
+    </w:rPr>
+    %(text)s
+</w:r>
+"""
+
 DOCUMENT_P_TEMPLATE = """
     <w:p>
         <w:pPr>
             <w:pStyle w:val="style0"/>
         </w:pPr>
-        <w:r>
-            <w:rPr>
-                %(bold)s
-            </w:rPr>
-            %(text)s
-        </w:r>
+        %(r_tags)s
     </w:p>
 """.strip()
+
+DOCUMENT_HYPERLINK_TEMPLATE = """
+<w:hyperlink r:id="%(r_id)s">
+    %(r_tag)s
+</w:hyperlink>
+"""
 
 DOCUMENT_LI_TEMPLATE = """
     <w:p>
