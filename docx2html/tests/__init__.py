@@ -98,11 +98,11 @@ def create_table(num_rows, num_columns, text):
     def _create_tr(rows, text):
         tcs = [_create_tc(text.next()) for _ in range(rows)]
         template = env.get_template(templates['tr'])
-        return template.render(tcs=tcs)
+        return template.render(table_cells=tcs)
 
     trs = [_create_tr(num_rows, text) for _ in range(num_rows)]
     template = env.get_template(templates['table'])
-    return template.render(trs=trs)
+    return template.render(table_rows=trs)
 
 
 def create_drawing(r_id):
