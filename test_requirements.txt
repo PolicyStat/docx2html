@@ -1,2 +1,3 @@
 nose
 mock
+Jinja==2.6
