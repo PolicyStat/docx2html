@@ -17,16 +17,16 @@ Usage
 Running Tests for Development
 =============================
 
+::
 
-	$ virtualenv path/to/new/virtualenv
-	$ source path/to/new/virtualenv/bin/activate
-	$ cd path/to/workspace
-	$ git clone git://github.com/PolicyStat/docx2html.git
-	$ cd docx2html
-	$ pip install .
-	$ pip install -r test_requirements.txt
-    $ ./run_tests.sh
-
+     $ virtualenv path/to/new/virtualenv
+     $ source path/to/new/virtualenv/bin/activate
+     $ cd path/to/workspace
+     $ git clone git://github.com/PolicyStat/docx2html.git
+     $ cd docx2html
+     $ pip install .
+     $ pip install -r test_requirements.txt
+     $ ./run_tests.sh
 
 Description
 ===========
@@ -68,19 +68,21 @@ docx2html allows you to specify how you would like to handle image uploading.
 For example, you might be uploading your images to Amazon S3 eg:
 Note: This documentation sucks, so you might need to read the source.
 
-	import os.path
-	from shutil import copyfile
+::
+
+    import os.path
+    from shutil import copyfile
 
     from docx2html import convert
 
-	def handle_image(image_id, relationship_dict):
-		image_path = relationship_dict[image_id]
-		# Now do something to the image. Let's move it somewhere.
-		_, filename = os.path.split(image_path)
-		destination_path = os.path.join('/tmp', filename)
-		copyfile(image_path, destination_path)
+    def handle_image(image_id, relationship_dict):
+        image_path = relationship_dict[image_id]
+        # Now do something to the image. Let's move it somewhere.
+        _, filename = os.path.split(image_path)
+        destination_path = os.path.join('/tmp', filename)
+        copyfile(image_path, destination_path)
 
-		# Return the `src` attribute to be used in the img tag
-		return 'file://%s' % destination
+        # Return the `src` attribute to be used in the img tag
+        return 'file://%s' % destination
 
     html = convert('path/to/docx/file', image_handler=handle_image)
