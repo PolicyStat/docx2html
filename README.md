@@ -1,17 +1,21 @@
-# docx2html
+=========
+docx2html
+=========
 
 Convert a docx (OOXML) file to semantic HTML.
 All of Word formatting nonsense is stripped away and
 you're left with a cleanly-formatted version of the content.
 
 
-## Usage
+Usage
+=====
 
     >>> from docx2html import convert
     >>> html = convert('path/to/docx/file')
 
 
-## Running Tests for Development
+Running Tests for Development
+=============================
 
 
 	$ virtualenv path/to/new/virtualenv
@@ -24,7 +28,8 @@ you're left with a cleanly-formatted version of the content.
     $ ./run_tests.sh
 
 
-## Description
+Description
+===========
 
 docx2html is designed to take a docx file and extract the content out and
 convert that content to html. It does not care about styles or fonts or
@@ -39,6 +44,8 @@ is a list of what currently works:
 * Lists
     * Nested lists
     * List styles (letters, roman numerals, etc.)
+    * Tables
+    * Paragraphs
 * Tables
     * Rowspans
     * Colspans
@@ -54,7 +61,8 @@ is a list of what currently works:
     * Root level lists that are upper case roman numerals get converted to h2
       tags
 
-### Handling embedded images
+Handling embedded images
+------------------------
 
 docx2html allows you to specify how you would like to handle image uploading.
 For example, you might be uploading your images to Amazon S3 eg:
