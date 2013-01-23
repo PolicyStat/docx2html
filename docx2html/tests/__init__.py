@@ -7,6 +7,18 @@ from docx2html.core import (
     create_html,
 )
 
+templates = {
+    'drawing': 'drawing.xml',
+    'hyperlink': 'hyperlink.xml',
+    'main': 'base.xml',
+    'p': 'p.xml',
+    'pict': 'pict.xml',
+    'r': 'r.xml',
+    'table': 'table.xml',
+    'tc': 'tc.xml',
+    'tr': 'tr.xml',
+}
+
 env = Environment(
     loader=PackageLoader(
         'docx2html.tests',
@@ -16,7 +28,7 @@ env = Environment(
 
 
 def create_xml(body):
-    template = env.get_template('base.xml')
+    template = env.get_template(templates['main'])
     return template.render(body=body)
 
 
@@ -29,7 +41,7 @@ def create_p_tag(text, bold=False):
         run_tags = text
     else:
         raise AssertionError('text must be a string or a list')
-    template = env.get_template('p.xml')
+    template = env.get_template(templates['p'])
 
     kwargs = {
         'run_tags': run_tags,
@@ -38,7 +50,7 @@ def create_p_tag(text, bold=False):
 
 
 def create_r_tag(text, is_bold=False):
-    template = env.get_template('r.xml')
+    template = env.get_template(templates['r'])
     kwargs = {
         'text': text,
         'is_bold': is_bold,
@@ -47,7 +59,7 @@ def create_r_tag(text, is_bold=False):
 
 
 def create_hyperlink_tag(r_id, run_tags):
-    template = env.get_template('hyperlink.xml')
+    template = env.get_template(templates['hyperlink'])
     kwargs = {
         'r_id': r_id,
         'run_tags': run_tags,
@@ -66,7 +78,7 @@ def create_li(text, ilvl, numId, bold=False):
             run_tags.append(create_r_tag(run_tags, run_bold))
     else:
         raise AssertionError('text must be a string or a list')
-    template = env.get_template('p.xml')
+    template = env.get_template(templates['p'])
 
     kwargs = {
         'run_tags': run_tags,
@@ -80,26 +92,26 @@ def create_li(text, ilvl, numId, bold=False):
 def create_table(num_rows, num_columns, text):
 
     def _create_tc(cell_value):
-        template = env.get_template('tc.xml')
+        template = env.get_template(templates['tc'])
         return template.render(p_tag=cell_value)
 
     def _create_tr(rows, text):
         tcs = [_create_tc(text.next()) for _ in range(rows)]
-        template = env.get_template('tr.xml')
+        template = env.get_template(templates['tr'])
         return template.render(tcs=tcs)
 
     trs = [_create_tr(num_rows, text) for _ in range(num_rows)]
-    template = env.get_template('table.xml')
+    template = env.get_template(templates['table'])
     return template.render(trs=trs)
 
 
 def create_drawing(r_id):
-    template = env.get_template('drawing.xml')
+    template = env.get_template(templates['drawing'])
     return template.render(r_id=r_id)
 
 
 def create_pict(r_id=None):
-    template = env.get_template('pict.xml')
+    template = env.get_template(templates['pict'])
     return template.render(r_id=r_id)
 
 
