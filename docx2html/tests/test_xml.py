@@ -542,7 +542,7 @@ class TableWithInvalidTag(_TranslationTestCase):
         return etree.fromstring(xml)
 
 
-class HyperlinkTestCase(_TranslationTestCase):
+class HyperlinkStyledTestCase(_TranslationTestCase):
     relationship_dict = {
         'rId0': 'www.google.com',
     }
@@ -555,6 +555,27 @@ class HyperlinkTestCase(_TranslationTestCase):
 
     def get_xml(self):
         r_tag = _create_r_tag('link', is_bold=True)
+        hyperlink = _create_hyperlink_tag(r_id='rId0', r_tag=r_tag)
+        p_tag = _create_p_tag([hyperlink])
+        xml = DOCUMENT_XML_TEMPLATE % {
+            'body': p_tag,
+        }
+        return etree.fromstring(xml)
+
+
+class HyperlinkVanillaTestCase(_TranslationTestCase):
+    relationship_dict = {
+        'rId0': 'www.google.com',
+    }
+
+    expected_output = '''
+    <html>
+        <p><a href="www.google.com">link</a></p>
+    </html>
+    '''
+
+    def get_xml(self):
+        r_tag = _create_r_tag('link', is_bold=False)
         hyperlink = _create_hyperlink_tag(r_id='rId0', r_tag=r_tag)
         p_tag = _create_p_tag([hyperlink])
         xml = DOCUMENT_XML_TEMPLATE % {
