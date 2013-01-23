@@ -21,21 +21,55 @@ def create_xml(body):
 
 
 def create_p_tag(text, bold=False):
+    if isinstance(text, str):
+        # Use create a single r tag based on the text and the bold
+        run_tag = create_r_tag(text, bold)
+        run_tags = [run_tag]
+    elif isinstance(text, list):
+        run_tags = text
+    else:
+        raise AssertionError('text must be a string or a list')
     template = env.get_template('p.xml')
 
     kwargs = {
+        'run_tags': run_tags,
+    }
+    return template.render(**kwargs)
+
+
+def create_r_tag(text, is_bold=False):
+    template = env.get_template('r.xml')
+    kwargs = {
         'text': text,
-        'is_bold': bold,
+        'is_bold': is_bold,
+    }
+    return template.render(**kwargs)
+
+
+def create_hyperlink_tag(r_id, run_tags):
+    template = env.get_template('hyperlink.xml')
+    kwargs = {
+        'r_id': r_id,
+        'run_tags': run_tags,
     }
     return template.render(**kwargs)
 
 
 def create_li(text, ilvl, numId, bold=False):
+    if isinstance(text, str):
+        # Use create a single r tag based on the text and the bold
+        run_tag = create_r_tag(text, bold)
+        run_tags = [run_tag]
+    elif isinstance(text, list):
+        run_tags = []
+        for run_text, run_bold in text:
+            run_tags.append(create_r_tag(run_tags, run_bold))
+    else:
+        raise AssertionError('text must be a string or a list')
     template = env.get_template('p.xml')
 
     kwargs = {
-        'text': text,
-        'is_bold': bold,
+        'run_tags': run_tags,
         'is_list': True,
         'ilvl': ilvl,
         'numId': numId,

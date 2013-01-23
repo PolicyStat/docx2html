@@ -8,12 +8,7 @@
 		</w:numPr>
 		{% endif %}
 	</w:pPr>
-	<w:r>
-		<w:rPr>
-			{% if is_bold %}
-			<w:b/>
-			{% endif %}
-		</w:rPr>
-		{% include 't.xml' %}
-	</w:r>
+	{% for run_tag in run_tags %}
+		{{ run_tag }}
+	{% endfor %}
 </w:p>
