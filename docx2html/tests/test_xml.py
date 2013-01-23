@@ -12,18 +12,20 @@ from docx2html.core import (
     is_last_li,
 )
 from docx2html.tests import (
-    assert_html_equal,
-    _TranslationTestCase,
     DOCUMENT_DRAWING_TEMPLATE,
+    DOCUMENT_HYPERLINK_TEMPLATE,
     DOCUMENT_LI_TEMPLATE,
-    DOCUMENT_PICT_TEMPLATE,
     DOCUMENT_PICT_NO_IMAGEID_TEMPLATE,
+    DOCUMENT_PICT_TEMPLATE,
     DOCUMENT_P_TEMPLATE,
-    DOCUMENT_T_TEMPLATE,
+    DOCUMENT_R_TEMPLATE,
     DOCUMENT_TBL_TEMPLATE,
     DOCUMENT_TC_TEMPLATE,
     DOCUMENT_TR_TEMPLATE,
+    DOCUMENT_T_TEMPLATE,
     DOCUMENT_XML_TEMPLATE,
+    _TranslationTestCase,
+    assert_html_equal,
 )
 
 
@@ -39,11 +41,27 @@ def _bold(is_bold):
     return ''
 
 
-def _create_p_tag(text, bold=False):
-    t_tag = _create_t_tag(text)
+def _create_p_tag(r_tags):
+    """
+    r_tags is a list of r tags or hyperlinks (or some combination)
+    """
     return DOCUMENT_P_TEMPLATE % {
+        'r_tags': ''.join(r_tags)
+    }
+
+
+def _create_r_tag(text, is_bold=False):
+    t_tag = _create_t_tag(text)
+    return DOCUMENT_R_TEMPLATE % {
         'text': t_tag,
-        'bold': _bold(is_bold=bold),
+        'bold': _bold(is_bold=is_bold),
+    }
+
+
+def _create_hyperlink_tag(r_id, r_tag):
+    return DOCUMENT_HYPERLINK_TEMPLATE % {
+        'r_id': r_id,
+        'r_tag': r_tag,
     }
 
 
@@ -149,16 +167,16 @@ class TableInListTestCase(_TranslationTestCase):
 
     def get_xml(self):
         table = _create_table(num_rows=2, num_columns=2, text=chain(
-            [_create_p_tag('BBB')],
-            [_create_p_tag('CCC')],
-            [_create_p_tag('DDD')],
-            [_create_p_tag('EEE')],
+            [_create_p_tag([_create_r_tag('BBB')])],
+            [_create_p_tag([_create_r_tag('CCC')])],
+            [_create_p_tag([_create_r_tag('DDD')])],
+            [_create_p_tag([_create_r_tag('EEE')])],
         ))
 
         # Nest that table in a list.
         first_li = _create_li(text='AAA', ilvl=0, numId=1)
         second = _create_li(text='FFF', ilvl=0, numId=1)
-        p_tag = _create_p_tag('GGG')
+        p_tag = _create_p_tag([_create_r_tag('GGG')])
         body = ''
         for el in [first_li, table, second, p_tag]:
             body += el
@@ -403,17 +421,14 @@ class ListWithContinuationTestCase(_TranslationTestCase):
 
     def get_xml(self):
         table = _create_table(num_rows=2, num_columns=2, text=chain(
-            [_create_p_tag('DDD')],
-            [_create_p_tag('EEE')],
-            [_create_p_tag('FFF')],
-            [_create_p_tag('GGG')],
+            [_create_p_tag([_create_r_tag('DDD')])],
+            [_create_p_tag([_create_r_tag('EEE')])],
+            [_create_p_tag([_create_r_tag('FFF')])],
+            [_create_p_tag([_create_r_tag('GGG')])],
         ))
         tags = [
             _create_li(text='AAA', ilvl=0, numId=1),
-            DOCUMENT_P_TEMPLATE % {
-                'text': _create_t_tag('BBB'),
-                'bold': _bold(is_bold=False),
-            },
+            _create_p_tag([_create_r_tag('BBB')]),
             _create_li(text='CCC', ilvl=0, numId=1),
             table,
             _create_li(text='HHH', ilvl=0, numId=1),
@@ -514,14 +529,56 @@ class TableWithInvalidTag(_TranslationTestCase):
 
     def get_xml(self):
         table = _create_table(num_rows=2, num_columns=2, text=chain(
-            [_create_p_tag('AAA')],
-            [_create_p_tag('BBB')],
+            [_create_p_tag([_create_r_tag('AAA')])],
+            [_create_p_tag([_create_r_tag('BBB')])],
             # This tag may have CCC in it, however this tag has no meaning
             # pertaining to content.
             ['<w:invalidTag>CCC</w:invalidTag>'],
-            [_create_p_tag('DDD')],
+            [_create_p_tag([_create_r_tag('DDD')])],
         ))
         xml = DOCUMENT_XML_TEMPLATE % {
             'body': table,
+        }
+        return etree.fromstring(xml)
+
+
+class HyperlinkStyledTestCase(_TranslationTestCase):
+    relationship_dict = {
+        'rId0': 'www.google.com',
+    }
+
+    expected_output = '''
+    <html>
+        <p><a href="www.google.com">link</a></p>
+    </html>
+    '''
+
+    def get_xml(self):
+        r_tag = _create_r_tag('link', is_bold=True)
+        hyperlink = _create_hyperlink_tag(r_id='rId0', r_tag=r_tag)
+        p_tag = _create_p_tag([hyperlink])
+        xml = DOCUMENT_XML_TEMPLATE % {
+            'body': p_tag,
+        }
+        return etree.fromstring(xml)
+
+
+class HyperlinkVanillaTestCase(_TranslationTestCase):
+    relationship_dict = {
+        'rId0': 'www.google.com',
+    }
+
+    expected_output = '''
+    <html>
+        <p><a href="www.google.com">link</a></p>
+    </html>
+    '''
+
+    def get_xml(self):
+        r_tag = _create_r_tag('link', is_bold=False)
+        hyperlink = _create_hyperlink_tag(r_id='rId0', r_tag=r_tag)
+        p_tag = _create_p_tag([hyperlink])
+        xml = DOCUMENT_XML_TEMPLATE % {
+            'body': p_tag,
         }
         return etree.fromstring(xml)
