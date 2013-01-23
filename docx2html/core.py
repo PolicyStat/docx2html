@@ -1112,7 +1112,8 @@ def handle_t_tag(
         # The relationship_id is the href
         if hyperlink_id in meta_data.relationship_dict:
             href = meta_data.relationship_dict[hyperlink_id]
-            text = '<a href="%s">%s</a>' % (href, text)
+            # Do not do any styling on hyperlinks
+            return '<a href="%s">%s</a>' % (href, text)
     # Wrap the text with any modifiers it might have (bold, italics or
     # underline)
     el_is_bold = not remove_bold and (

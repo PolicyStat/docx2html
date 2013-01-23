@@ -15,9 +15,11 @@ from docx2html.tests import (
     _TranslationTestCase,
     assert_html_equal,
     create_drawing,
+    create_hyperlink_tag,
     create_li,
     create_p_tag,
     create_pict,
+    create_r_tag,
     create_table,
     create_xml,
 )
@@ -101,6 +103,7 @@ class TableInListTestCase(_TranslationTestCase):
         first_li = create_li(text='AAA', ilvl=0, numId=1)
         second = create_li(text='FFF', ilvl=0, numId=1)
         p_tag = create_p_tag('GGG')
+
         body = ''
         for el in [first_li, table, second, p_tag]:
             body += el
@@ -441,5 +444,47 @@ class TableWithInvalidTag(_TranslationTestCase):
             [create_p_tag('DDD')],
         ))
         body = table
+        xml = create_xml(body)
+        return etree.fromstring(xml)
+
+
+class HyperlinkStyledTestCase(_TranslationTestCase):
+    relationship_dict = {
+        'rId0': 'www.google.com',
+    }
+
+    expected_output = '''
+    <html>
+        <p><a href="www.google.com">link</a>.</p>
+    </html>
+    '''
+
+    def get_xml(self):
+        run_tags = []
+        run_tags.append(create_r_tag('link', is_bold=True))
+        run_tags = [create_hyperlink_tag(r_id='rId0', run_tags=run_tags)]
+        run_tags.append(create_r_tag('.', is_bold=False))
+        body = create_p_tag(run_tags)
+        xml = create_xml(body)
+        return etree.fromstring(xml)
+
+
+class HyperlinkVanillaTestCase(_TranslationTestCase):
+    relationship_dict = {
+        'rId0': 'www.google.com',
+    }
+
+    expected_output = '''
+    <html>
+        <p><a href="www.google.com">link</a>.</p>
+    </html>
+    '''
+
+    def get_xml(self):
+        run_tags = []
+        run_tags.append(create_r_tag('link', is_bold=False))
+        run_tags = [create_hyperlink_tag(r_id='rId0', run_tags=run_tags)]
+        run_tags.append(create_r_tag('.', is_bold=False))
+        body = create_p_tag(run_tags)
         xml = create_xml(body)
         return etree.fromstring(xml)
