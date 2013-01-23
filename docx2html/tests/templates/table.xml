@@ -12,7 +12,7 @@
 		<w:gridCol w:w="4986"/>
 		<w:gridCol w:w="4986"/>
 	</w:tblGrid>
-	{% for tr in trs %}
-		{{ tr }}
+	{% for table_row in table_rows %}
+		{{ table_row }}
 	{% endfor %}
 </w:tbl>
