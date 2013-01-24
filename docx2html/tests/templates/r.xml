@@ -1,0 +1,8 @@
+<w:r>
+	<w:rPr>
+		{% if is_bold %}
+		<w:b/>
+		{% endif %}
+	</w:rPr>
+	{% include 't.xml' %}
+</w:r>
