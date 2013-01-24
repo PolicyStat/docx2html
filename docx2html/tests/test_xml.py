@@ -11,90 +11,11 @@ from docx2html.core import (
     get_namespace,
     is_last_li,
 )
+from docx2html.tests.document_builder import DocxBuilder as DXB
 from docx2html.tests import (
-    DOCUMENT_DRAWING_TEMPLATE,
-    DOCUMENT_HYPERLINK_TEMPLATE,
-    DOCUMENT_LI_TEMPLATE,
-    DOCUMENT_PICT_NO_IMAGEID_TEMPLATE,
-    DOCUMENT_PICT_TEMPLATE,
-    DOCUMENT_P_TEMPLATE,
-    DOCUMENT_R_TEMPLATE,
-    DOCUMENT_TBL_TEMPLATE,
-    DOCUMENT_TC_TEMPLATE,
-    DOCUMENT_TR_TEMPLATE,
-    DOCUMENT_T_TEMPLATE,
-    DOCUMENT_XML_TEMPLATE,
     _TranslationTestCase,
     assert_html_equal,
 )
-
-
-def _create_t_tag(text):
-    return DOCUMENT_T_TEMPLATE % {
-        'text': text,
-    }
-
-
-def _bold(is_bold):
-    if is_bold:
-        return '<w:b/>'
-    return ''
-
-
-def _create_p_tag(r_tags):
-    """
-    r_tags is a list of r tags or hyperlinks (or some combination)
-    """
-    return DOCUMENT_P_TEMPLATE % {
-        'r_tags': ''.join(r_tags)
-    }
-
-
-def _create_r_tag(text, is_bold=False):
-    t_tag = _create_t_tag(text)
-    return DOCUMENT_R_TEMPLATE % {
-        'text': t_tag,
-        'bold': _bold(is_bold=is_bold),
-    }
-
-
-def _create_hyperlink_tag(r_id, r_tag):
-    return DOCUMENT_HYPERLINK_TEMPLATE % {
-        'r_id': r_id,
-        'r_tag': r_tag,
-    }
-
-
-def _create_li(text, ilvl, numId, bold=False):
-    text = _create_t_tag(text)
-    return DOCUMENT_LI_TEMPLATE % {
-        'text': text,
-        'ilvl': ilvl,
-        'numId': numId,
-        'bold': _bold(is_bold=bold),
-    }
-
-
-def _create_table(num_rows, num_columns, text):
-    def _create_tc(cell_value):
-        return DOCUMENT_TC_TEMPLATE % {
-            'p_tag': cell_value,
-        }
-
-    def _create_tr(rows, text):
-        tcs = ''
-        for _ in range(rows):
-            tcs += _create_tc(text.next())
-        return DOCUMENT_TR_TEMPLATE % {
-            'tcs': tcs,
-        }
-
-    trs = ''
-    for _ in range(num_columns):
-        trs += _create_tr(num_rows, text)
-    return DOCUMENT_TBL_TEMPLATE % {
-        'trs': trs,
-    }
 
 
 class SimpleListTestCase(_TranslationTestCase):
@@ -116,11 +37,9 @@ class SimpleListTestCase(_TranslationTestCase):
         ]
         lis = ''
         for text, ilvl, numId in li_text:
-            lis += _create_li(text=text, ilvl=ilvl, numId=numId)
+            lis += DXB.li(text=text, ilvl=ilvl, numId=numId)
 
-        xml = DOCUMENT_XML_TEMPLATE % {
-            'body': lis,
-        }
+        xml = DXB.xml(lis)
         return etree.fromstring(xml)
 
     def test_get_li_nodes(self):
@@ -166,23 +85,22 @@ class TableInListTestCase(_TranslationTestCase):
     '''
 
     def get_xml(self):
-        table = _create_table(num_rows=2, num_columns=2, text=chain(
-            [_create_p_tag([_create_r_tag('BBB')])],
-            [_create_p_tag([_create_r_tag('CCC')])],
-            [_create_p_tag([_create_r_tag('DDD')])],
-            [_create_p_tag([_create_r_tag('EEE')])],
+        table = DXB.table(num_rows=2, num_columns=2, text=chain(
+            [DXB.p_tag('BBB')],
+            [DXB.p_tag('CCC')],
+            [DXB.p_tag('DDD')],
+            [DXB.p_tag('EEE')],
         ))
 
         # Nest that table in a list.
-        first_li = _create_li(text='AAA', ilvl=0, numId=1)
-        second = _create_li(text='FFF', ilvl=0, numId=1)
-        p_tag = _create_p_tag([_create_r_tag('GGG')])
+        first_li = DXB.li(text='AAA', ilvl=0, numId=1)
+        second = DXB.li(text='FFF', ilvl=0, numId=1)
+        p_tag = DXB.p_tag('GGG')
+
         body = ''
         for el in [first_li, table, second, p_tag]:
             body += el
-        xml = DOCUMENT_XML_TEMPLATE % {
-            'body': body,
-        }
+        xml = DXB.xml(body)
         return etree.fromstring(xml)
 
     def test_get_li_nodes_with_nested_table(self):
@@ -246,13 +164,11 @@ class RomanNumeralToHeadingTestCase(_TranslationTestCase):
             ('FFF', 1, 1),
             ('GGG', 2, 1),
         ]
-        lis = ''
+        body = ''
         for text, ilvl, numId in li_text:
-            lis += _create_li(text=text, ilvl=ilvl, numId=numId)
+            body += DXB.li(text=text, ilvl=ilvl, numId=numId)
 
-        xml = DOCUMENT_XML_TEMPLATE % {
-            'body': lis,
-        }
+        xml = DXB.xml(body)
         return etree.fromstring(xml)
 
     def test_is_top_level_upper_roman(self):
@@ -299,13 +215,11 @@ class RomanNumeralToHeadingAllBoldTestCase(_TranslationTestCase):
             ('BBB', 0, 1),
             ('CCC', 0, 1),
         ]
-        lis = ''
+        body = ''
         for text, ilvl, numId in li_text:
-            lis += _create_li(text=text, ilvl=ilvl, numId=numId, bold=True)
+            body += DXB.li(text=text, ilvl=ilvl, numId=numId, bold=True)
 
-        xml = DOCUMENT_XML_TEMPLATE % {
-            'body': lis,
-        }
+        xml = DXB.xml(body)
         return etree.fromstring(xml)
 
 
@@ -334,12 +248,8 @@ class ImageTestCase(_TranslationTestCase):
         return relationship_dict.get(image_id)
 
     def get_xml(self):
-        drawing = DOCUMENT_DRAWING_TEMPLATE % {
-            'r_id': 'rId0',
-        }
-        pict = DOCUMENT_PICT_TEMPLATE % {
-            'r_id': 'rId1',
-        }
+        drawing = DXB.drawing('rId0')
+        pict = DXB.pict('rId1')
         tags = [
             drawing,
             pict,
@@ -348,9 +258,7 @@ class ImageTestCase(_TranslationTestCase):
         for el in tags:
             body += el
 
-        xml = DOCUMENT_XML_TEMPLATE % {
-            'body': body,
-        }
+        xml = DXB.xml(body)
         return etree.fromstring(xml)
 
     def test_get_image_id(self):
@@ -420,26 +328,24 @@ class ListWithContinuationTestCase(_TranslationTestCase):
     '''
 
     def get_xml(self):
-        table = _create_table(num_rows=2, num_columns=2, text=chain(
-            [_create_p_tag([_create_r_tag('DDD')])],
-            [_create_p_tag([_create_r_tag('EEE')])],
-            [_create_p_tag([_create_r_tag('FFF')])],
-            [_create_p_tag([_create_r_tag('GGG')])],
+        table = DXB.table(num_rows=2, num_columns=2, text=chain(
+            [DXB.p_tag('DDD')],
+            [DXB.p_tag('EEE')],
+            [DXB.p_tag('FFF')],
+            [DXB.p_tag('GGG')],
         ))
         tags = [
-            _create_li(text='AAA', ilvl=0, numId=1),
-            _create_p_tag([_create_r_tag('BBB')]),
-            _create_li(text='CCC', ilvl=0, numId=1),
+            DXB.li(text='AAA', ilvl=0, numId=1),
+            DXB.p_tag('BBB'),
+            DXB.li(text='CCC', ilvl=0, numId=1),
             table,
-            _create_li(text='HHH', ilvl=0, numId=1),
+            DXB.li(text='HHH', ilvl=0, numId=1),
         ]
         body = ''
         for el in tags:
             body += el
 
-        xml = DOCUMENT_XML_TEMPLATE % {
-            'body': body,
-        }
+        xml = DXB.xml(body)
         return etree.fromstring(xml)
 
 
@@ -463,9 +369,7 @@ class PictImageTestCase(_TranslationTestCase):
         return relationship_dict.get(image_id)
 
     def get_xml(self):
-        pict = DOCUMENT_PICT_TEMPLATE % {
-            'r_id': 'rId0',
-        }
+        pict = DXB.pict('rId0')
         tags = [
             pict,
         ]
@@ -473,9 +377,7 @@ class PictImageTestCase(_TranslationTestCase):
         for el in tags:
             body += el
 
-        xml = DOCUMENT_XML_TEMPLATE % {
-            'body': body,
-        }
+        xml = DXB.xml(body)
         return etree.fromstring(xml)
 
     def test_image_id_for_pict(self):
@@ -491,13 +393,13 @@ class PictImageTestCase(_TranslationTestCase):
         self.assertEqual(image_id, 'rId0')
 
 
-class PictImageTestCase(_TranslationTestCase):
+class PictImageMissingIdTestCase(_TranslationTestCase):
     expected_output = '''
         <html></html>
     '''
 
     def get_xml(self):
-        pict = DOCUMENT_PICT_NO_IMAGEID_TEMPLATE
+        pict = DXB.pict(None)
         tags = [
             pict,
         ]
@@ -505,9 +407,7 @@ class PictImageTestCase(_TranslationTestCase):
         for el in tags:
             body += el
 
-        xml = DOCUMENT_XML_TEMPLATE % {
-            'body': body,
-        }
+        xml = DXB.xml(body)
         return etree.fromstring(xml)
 
 
@@ -528,17 +428,16 @@ class TableWithInvalidTag(_TranslationTestCase):
     '''
 
     def get_xml(self):
-        table = _create_table(num_rows=2, num_columns=2, text=chain(
-            [_create_p_tag([_create_r_tag('AAA')])],
-            [_create_p_tag([_create_r_tag('BBB')])],
+        table = DXB.table(num_rows=2, num_columns=2, text=chain(
+            [DXB.p_tag('AAA')],
+            [DXB.p_tag('BBB')],
             # This tag may have CCC in it, however this tag has no meaning
             # pertaining to content.
             ['<w:invalidTag>CCC</w:invalidTag>'],
-            [_create_p_tag([_create_r_tag('DDD')])],
+            [DXB.p_tag('DDD')],
         ))
-        xml = DOCUMENT_XML_TEMPLATE % {
-            'body': table,
-        }
+        body = table
+        xml = DXB.xml(body)
         return etree.fromstring(xml)
 
 
@@ -549,17 +448,17 @@ class HyperlinkStyledTestCase(_TranslationTestCase):
 
     expected_output = '''
     <html>
-        <p><a href="www.google.com">link</a></p>
+        <p><a href="www.google.com">link</a>.</p>
     </html>
     '''
 
     def get_xml(self):
-        r_tag = _create_r_tag('link', is_bold=True)
-        hyperlink = _create_hyperlink_tag(r_id='rId0', r_tag=r_tag)
-        p_tag = _create_p_tag([hyperlink])
-        xml = DOCUMENT_XML_TEMPLATE % {
-            'body': p_tag,
-        }
+        run_tags = []
+        run_tags.append(DXB.r_tag('link', is_bold=True))
+        run_tags = [DXB.hyperlink_tag(r_id='rId0', run_tags=run_tags)]
+        run_tags.append(DXB.r_tag('.', is_bold=False))
+        body = DXB.p_tag(run_tags)
+        xml = DXB.xml(body)
         return etree.fromstring(xml)
 
 
@@ -570,15 +469,15 @@ class HyperlinkVanillaTestCase(_TranslationTestCase):
 
     expected_output = '''
     <html>
-        <p><a href="www.google.com">link</a></p>
+        <p><a href="www.google.com">link</a>.</p>
     </html>
     '''
 
     def get_xml(self):
-        r_tag = _create_r_tag('link', is_bold=False)
-        hyperlink = _create_hyperlink_tag(r_id='rId0', r_tag=r_tag)
-        p_tag = _create_p_tag([hyperlink])
-        xml = DOCUMENT_XML_TEMPLATE % {
-            'body': p_tag,
-        }
+        run_tags = []
+        run_tags.append(DXB.r_tag('link', is_bold=False))
+        run_tags = [DXB.hyperlink_tag(r_id='rId0', run_tags=run_tags)]
+        run_tags.append(DXB.r_tag('.', is_bold=False))
+        body = DXB.p_tag(run_tags)
+        xml = DXB.xml(body)
         return etree.fromstring(xml)

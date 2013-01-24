@@ -1,2 +1,3 @@
 nose
 mock
+Jinja2>=2.0
