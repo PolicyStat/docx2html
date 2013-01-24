@@ -1,5 +1,6 @@
 include AUTHORS
+include CHANGELOG
 include LICENSE
-include README.md
 include MANIFEST.in
+include README.md
 include docx2html/fixtures/*
