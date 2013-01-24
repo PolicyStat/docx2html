@@ -14,8 +14,13 @@ rel_file = lambda *args: os.path.join(
         os.path.dirname(os.path.abspath(__file__)), *args)
 
 
-def get_readme():
-    return open(rel_file('README.md')).read()
+def get_file(filename):
+    with open(rel_file(filename)) as f:
+        return f.read()
+
+
+def get_description():
+    return get_file('README.md') + get_file('CHANGELOG')
 
 setup(
     name="docx2html",
@@ -40,5 +45,5 @@ setup(
         "Topic :: Text Processing :: Markup :: HTML",
         "Topic :: Text Processing :: Markup :: XML",
     ],
-    long_description=get_readme(),
+    long_description=get_description(),
 )
