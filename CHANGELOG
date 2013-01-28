@@ -2,9 +2,13 @@
 Changelog
 =========
 
+* 0.1.1
+    * Added a changelog
+    * Styles are now stripped from hyperlinks
+    * jinja2 is now used to render test xml
 * 0.1.0
-  * Correctly handle tables and paragraphs in lists. Before if there was a
-    table in a list it would break the list into two halves, the half before
-    the table and the half after the table (with the table inbetween them). Now
-    if there is a table or paragraph in a list those elements get rolled into
-    the list.
+    * Correctly handle tables and paragraphs in lists. Before if there was a
+      table in a list it would break the list into two halves, the half before
+      the table and the half after the table (with the table inbetween them). Now
+      if there is a table or paragraph in a list those elements get rolled into
+      the list.
