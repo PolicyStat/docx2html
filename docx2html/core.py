@@ -126,13 +126,22 @@ def get_font_size(p, styles_dict):
             font_size = styles_dict[pStyle]['font_size']
         while font_size is None:
             old_pStyle = pStyle
+            # If pStyle is not in the styles_dict then we have to break.
             if pStyle not in styles_dict:
                 break
+            # If based on is not in the styles_dict for pStyle then we have to
+            # break.
             if 'based_on' not in styles_dict[pStyle]:
                 break
+            # Try to derive what the font size is based on what the current
+            # style is based on.
             pStyle = styles_dict[pStyle]['based_on']
             if old_pStyle == pStyle:
                 break
+            # If pStyle is not in styles_dict then break.
+            if pStyle not in styles_dict:
+                break
+            # We have found a new font size
             font_size = styles_dict[pStyle]['font_size']
         return font_size
 
@@ -660,7 +669,7 @@ def get_style_dict(tree):
     if tree is None:
         return {}
     w_namespace = get_namespace(tree, 'w')
-    result = defaultdict(dict)
+    result = {}
     for el in tree:
         style_id = el.get('%sstyleId' % w_namespace)
         el_result = {
