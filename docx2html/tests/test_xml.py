@@ -525,4 +525,7 @@ class MissingFontInfoTestCase(_TranslationTestCase):
         w_namespace = get_namespace(tree, 'w')
         p_tag = tree.find('%sp' % w_namespace)
         self.assertNotEqual(p_tag, None)
-        print get_font_size(p_tag, self.styles_dict)
+        self.assertEqual(
+            get_font_size(p_tag, self.styles_dict),
+            None,
+        )
