@@ -6,6 +6,7 @@ from copy import copy
 from docx2html.core import (
     _is_top_level_upper_roman,
     create_html,
+    get_font_size,
     get_image_id,
     get_li_nodes,
     get_namespace,
@@ -481,3 +482,47 @@ class HyperlinkVanillaTestCase(_TranslationTestCase):
         body = DXB.p_tag(run_tags)
         xml = DXB.xml(body)
         return etree.fromstring(xml)
+
+
+class MissingFontInfoTestCase(_TranslationTestCase):
+    styles_dict = {
+        'BodyText': {
+            'header': False, 'font_size': None, 'based_on': 'Normal',
+        },
+    }
+
+    expected_output = '''
+    <html>
+        <p><strong>AAA</strong></p>
+    </html>
+    '''
+
+    def get_xml(self):
+        p_tag = '''
+        <w:p w:rsidR="009C063D" w:rsidRDefault="009C063D">
+            <w:pPr>
+                <w:pStyle w:val="BodyText"/>
+                <w:ind w:left="720"/>
+                <w:rPr>
+                    <w:b w:val="0"/>
+                    <w:bCs w:val="0"/>
+                </w:rPr>
+            </w:pPr>
+            <w:r>
+                <w:rPr>
+                    <w:b w:val="0"/>
+                    <w:bCs w:val="0"/>
+                </w:rPr>
+                <w:t>AAA</w:t>
+            </w:r>
+        </w:p>
+        '''
+        xml = DXB.xml(p_tag)
+        return etree.fromstring(xml)
+
+    def test_get_font_size(self):
+        tree = self.get_xml()
+        w_namespace = get_namespace(tree, 'w')
+        p_tag = tree.find('%sp' % w_namespace)
+        self.assertNotEqual(p_tag, None)
+        print get_font_size(p_tag, self.styles_dict)
