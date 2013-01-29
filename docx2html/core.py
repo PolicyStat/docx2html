@@ -122,6 +122,8 @@ def get_font_size(p, styles_dict):
             return None
         pStyle = pStyle.get('%sval' % w_namespace)
         font_size = None
+        if pStyle not in styles_dict:
+            return None
         if 'font_size' in styles_dict[pStyle]:
             font_size = styles_dict[pStyle]['font_size']
         while font_size is None:
