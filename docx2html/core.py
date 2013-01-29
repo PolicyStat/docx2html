@@ -14,6 +14,7 @@ from docx2html.exceptions import (
     FileNotDocx,
     MalformedDocx,
     UnintendedTag,
+    SyntaxNotSupported,
 )
 
 DETECT_FONT_SIZE = False
@@ -122,9 +123,10 @@ def get_font_size(p, styles_dict):
             return None
         pStyle = pStyle.get('%sval' % w_namespace)
         font_size = None
-        if pStyle not in styles_dict:
+        style_value = styles_dict.get(pStyle, None)
+        if style_value is None:
             return None
-        if 'font_size' in styles_dict[pStyle]:
+        if 'font_size' in style_value:
             font_size = styles_dict[pStyle]['font_size']
         while font_size is None:
             old_pStyle = pStyle
@@ -1207,12 +1209,20 @@ def get_p_data(p, meta_data, is_td=False):
 
             # Once we have the hyperlink_id then we need to replace the
             # hyperlink tag with its child run tag.
-            new_el = el.find('%sr' % w_namespace)
-            if new_el is None:
+            child_run_tag = el.find('%sr' % w_namespace)
+            if child_run_tag is None:
                 if has_text(el):
-                    raise UnintendedTag('Losing content')
+                    # If there is text in this hyperlink we need to raise an
+                    # exception so that we don't lose content.
+                    raise SyntaxNotSupported(
+                        'Hyperlink with text outside run tags not supported.',
+                    )
+                # It is very likely that this was a hyperlink tag that had its
+                # content removed, office does not do a very good job at
+                # cleaning up old tags, as such this tag has no content and
+                # should be ignored.
                 continue
-            el = new_el
+            el = child_run_tag
 
         # t tags hold all the text content.
         for child in get_raw_data(el):
