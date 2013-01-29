@@ -16,3 +16,7 @@ class MalformedDocx(Docx2HtmlException):
 
 class UnintendedTag(Docx2HtmlException):
     pass
+
+
+class SyntaxNotSupported(Docx2HtmlException):
+    pass
