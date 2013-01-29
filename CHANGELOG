@@ -3,6 +3,7 @@ Changelog
 =========
 
 * 0.1.3
+    * Hyperlinks with no text no longer throw an error
     * Fixed a bug with determining the font size with an incomplete styles dict
 * 0.1.2
     * Fixed a bug with determining the font size of a paragraph tag
