@@ -248,7 +248,7 @@ def has_text(p):
     this is the case we do not want that tag interfering with things like
     lists. Detect if this tag has any content.
     """
-    return '' != etree.tostring(p, encoding=unicode, method='text')
+    return '' != etree.tostring(p, encoding=unicode, method='text').strip()
 
 
 def is_last_li(li, meta_data, current_numId):
@@ -1207,7 +1207,12 @@ def get_p_data(p, meta_data, is_td=False):
 
             # Once we have the hyperlink_id then we need to replace the
             # hyperlink tag with its child run tag.
-            el = el.find('%sr' % w_namespace)
+            new_el = el.find('%sr' % w_namespace)
+            if new_el is None:
+                if has_text(el):
+                    raise UnintendedTag('Losing content')
+                continue
+            el = new_el
 
         # t tags hold all the text content.
         for child in get_raw_data(el):
