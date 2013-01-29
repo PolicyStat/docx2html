@@ -529,3 +529,13 @@ class MissingFontInfoTestCase(_TranslationTestCase):
             get_font_size(p_tag, self.styles_dict),
             None,
         )
+
+    def test_get_font_size_empty_styles_dict(self):
+        tree = self.get_xml()
+        w_namespace = get_namespace(tree, 'w')
+        p_tag = tree.find('%sp' % w_namespace)
+        self.assertNotEqual(p_tag, None)
+        self.assertEqual(
+            get_font_size(p_tag, {}),
+            None,
+        )
