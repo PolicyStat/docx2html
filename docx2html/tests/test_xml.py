@@ -463,6 +463,24 @@ class HyperlinkStyledTestCase(_TranslationTestCase):
         return etree.fromstring(xml)
 
 
+class HyperlinkNoTextTestCase(_TranslationTestCase):
+    relationship_dict = {
+        'rId0': 'www.google.com',
+    }
+
+    expected_output = '''
+    <html>
+    </html>
+    '''
+
+    def get_xml(self):
+        run_tags = []
+        run_tags = [DXB.hyperlink_tag(r_id='rId0', run_tags=run_tags)]
+        body = DXB.p_tag(run_tags)
+        xml = DXB.xml(body)
+        return etree.fromstring(xml)
+
+
 class HyperlinkVanillaTestCase(_TranslationTestCase):
     relationship_dict = {
         'rId0': 'www.google.com',
@@ -527,5 +545,15 @@ class MissingFontInfoTestCase(_TranslationTestCase):
         self.assertNotEqual(p_tag, None)
         self.assertEqual(
             get_font_size(p_tag, self.styles_dict),
+            None,
+        )
+
+    def test_get_font_size_empty_styles_dict(self):
+        tree = self.get_xml()
+        w_namespace = get_namespace(tree, 'w')
+        p_tag = tree.find('%sp' % w_namespace)
+        self.assertNotEqual(p_tag, None)
+        self.assertEqual(
+            get_font_size(p_tag, {}),
             None,
         )
