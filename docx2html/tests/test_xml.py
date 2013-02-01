@@ -557,3 +557,22 @@ class MissingFontInfoTestCase(_TranslationTestCase):
             get_font_size(p_tag, {}),
             None,
         )
+
+
+class HeaderFooterTagsWithContent(_TranslationTestCase):
+    expected_output = '''
+    <html>
+        <ol data-list-type="decimal">
+            <li>AAA</li>
+        </ol>
+        <p>BBB</p>
+    </html>
+    '''
+
+    def get_xml(self):
+        li = DXB.li(text='AAA', ilvl=0, numId=1)
+        p_tag = DXB.p_tag('BBB')
+        footer_tag = DXB.sectPr_tag(p_tag)
+        body = li + footer_tag
+        xml = DXB.xml(body)
+        return etree.fromstring(xml)
