@@ -903,7 +903,6 @@ def get_list_data(li_nodes, meta_data):
         elif el.tag == '%sp' % w_namespace:
             return get_p_data(el, meta_data), [el]
         if has_text(el):
-            print etree.tostring(el, pretty_print=True)
             raise UnintendedTag('Did not expect %s' % el.tag)
 
     def _merge_lists(ilvl, current_ilvl, ol_dict, current_ol):
