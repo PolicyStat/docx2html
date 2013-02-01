@@ -250,6 +250,15 @@ def has_text(p):
     this is the case we do not want that tag interfering with things like
     lists. Detect if this tag has any content.
     """
+    w_namespace = get_namespace(p, 'w')
+
+    # There are some tags that even if they have text we want to ignore
+    # (tags related to headers and footers)
+    black_list = (
+        '%ssectPr' % w_namespace,
+    )
+    if p.tag in black_list:
+        return False
     return '' != etree.tostring(p, encoding=unicode, method='text').strip()
 
 
@@ -894,6 +903,7 @@ def get_list_data(li_nodes, meta_data):
         elif el.tag == '%sp' % w_namespace:
             return get_p_data(el, meta_data), [el]
         if has_text(el):
+            print etree.tostring(el, pretty_print=True)
             raise UnintendedTag('Did not expect %s' % el.tag)
 
     def _merge_lists(ilvl, current_ilvl, ol_dict, current_ol):
