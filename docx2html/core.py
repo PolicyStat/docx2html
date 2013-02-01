@@ -1266,26 +1266,8 @@ def _strip_tag(tree, tag):
     """
     Remove all tags that have the tag name ``tag``
     """
-    w_namespace = get_namespace(tree, 'w')
-
-    check_text = True
-    # There are some tags that even if they have text we want to ignore
-    # (tags related to headers and footers)
-    black_list = (
-        '%ssectPr' % w_namespace,
-    )
-    if tag in black_list:
-        # We do not care if these tags have text in them or not, remove them
-        # anyway.
-        check_text = False
     for el in tree:
-        remove_el = False
         if el.tag == tag:
-            # We can remove the element if we don't want to check the element
-            # for text, or if the tag in question does not have text.
-            if not check_text or not has_text(el):
-                remove_el = True
-        if remove_el:
             tree.remove(el)
 
 
