@@ -565,7 +565,6 @@ class HeaderFooterTagsWithContent(_TranslationTestCase):
         <ol data-list-type="decimal">
             <li>AAA</li>
         </ol>
-        <p>BBB</p>
     </html>
     '''
 

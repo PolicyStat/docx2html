@@ -250,15 +250,6 @@ def has_text(p):
     this is the case we do not want that tag interfering with things like
     lists. Detect if this tag has any content.
     """
-    w_namespace = get_namespace(p, 'w')
-
-    # There are some tags that even if they have text we want to ignore
-    # (tags related to headers and footers)
-    black_list = (
-        '%ssectPr' % w_namespace,
-    )
-    if p.tag in black_list:
-        return False
     return '' != etree.tostring(p, encoding=unicode, method='text').strip()
 
 
@@ -1271,6 +1262,33 @@ def get_p_data(p, meta_data, is_td=False):
     return p_text
 
 
+def _strip_tag(tree, tag):
+    """
+    Remove all tags that have the tag name ``tag``
+    """
+    w_namespace = get_namespace(tree, 'w')
+
+    check_text = True
+    # There are some tags that even if they have text we want to ignore
+    # (tags related to headers and footers)
+    black_list = (
+        '%ssectPr' % w_namespace,
+    )
+    if tag in black_list:
+        # We do not care if these tags have text in them or not, remove them
+        # anyway.
+        check_text = False
+    for el in tree:
+        remove_el = False
+        if el.tag == tag:
+            # We can remove the element if we don't want to check the element
+            # for text, or if the tag in question does not have text.
+            if not check_text or not has_text(el):
+                remove_el = True
+        if remove_el:
+            tree.remove(el)
+
+
 def get_zip_file_handler(file_path):
     return ZipFile(file_path)
 
@@ -1334,6 +1352,8 @@ def create_html(tree, meta_data):
 
     w_namespace = get_namespace(tree, 'w')
     visited_nodes = []
+
+    _strip_tag(tree, '%ssectPr' % w_namespace)
     for el in tree.iter():
         # The way lists are handled could double visit certain elements; keep
         # track of which elements have been visited and skip any that have been
