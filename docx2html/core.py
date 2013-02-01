@@ -1262,6 +1262,15 @@ def get_p_data(p, meta_data, is_td=False):
     return p_text
 
 
+def _strip_tag(tree, tag):
+    """
+    Remove all tags that have the tag name ``tag``
+    """
+    for el in tree:
+        if el.tag == tag:
+            tree.remove(el)
+
+
 def get_zip_file_handler(file_path):
     return ZipFile(file_path)
 
@@ -1325,6 +1334,8 @@ def create_html(tree, meta_data):
 
     w_namespace = get_namespace(tree, 'w')
     visited_nodes = []
+
+    _strip_tag(tree, '%ssectPr' % w_namespace)
     for el in tree.iter():
         # The way lists are handled could double visit certain elements; keep
         # track of which elements have been visited and skip any that have been

@@ -7,6 +7,7 @@ templates = {
     'p': 'p.xml',
     'pict': 'pict.xml',
     'r': 'r.xml',
+    'sectPr': 'sectPr.xml',
     'table': 'table.xml',
     'tc': 'tc.xml',
     'tr': 'tr.xml',
@@ -108,3 +109,12 @@ class DocxBuilder(object):
     def pict(self, r_id=None):
         template = env.get_template(templates['pict'])
         return template.render(r_id=r_id)
+
+    @classmethod
+    def sectPr_tag(self, p_tag):
+        template = env.get_template(templates['sectPr'])
+
+        kwargs = {
+            'p_tag': p_tag,
+        }
+        return template.render(**kwargs)
