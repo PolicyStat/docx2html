@@ -1281,7 +1281,12 @@ def read_html_file(file_path):
     return html
 
 
-def convert(file_path, image_handler=None, fall_back=None, converter=None):
+def convert(
+        file_path,
+        image_handler=None,
+        fall_back=None,
+        converter=None,
+        pretty_print=False):
     """
     ``file_path`` is a path to the file on the file system that you want to be
         converted to html.
@@ -1292,6 +1297,7 @@ def convert(file_path, image_handler=None, fall_back=None, converter=None):
         only be called if for whatever reason the conversion fails.
     ``converter`` is a function to convert a document that is not docx to docx
         (examples in docx2html.converters)
+    ``pretty_print`` Should we pass the pretty_print flag to etree
 
     Returns html extracted from ``file_path``
     """
@@ -1324,10 +1330,10 @@ def convert(file_path, image_handler=None, fall_back=None, converter=None):
 
     # Need to populate the xml based on word/document.xml
     tree, meta_data = _get_document_data(zf, image_handler)
-    return create_html(tree, meta_data)
+    return create_html(tree, meta_data, pretty_print=pretty_print)
 
 
-def create_html(tree, meta_data):
+def create_html(tree, meta_data, pretty_print=False):
 
     # Start the return value
     new_html = etree.Element('html')
@@ -1391,6 +1397,7 @@ def create_html(tree, meta_data):
         new_html,
         method='html',
         with_tail=True,
+        pretty_print=pretty_print,
     )
     return _make_void_elements_self_close(result)
 

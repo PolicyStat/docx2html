@@ -35,6 +35,10 @@ setup(
     scripts=[],
     zip_safe=False,
     install_requires=['lxml==2.2.4', 'pillow==1.7.7'],
+    entry_points={
+        'console_scripts':
+            ['docx2html = docx2html:main']
+    },
     cmdclass={},
     classifiers=[
         "Development Status :: 3 - Alpha",
