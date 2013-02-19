@@ -1266,9 +1266,9 @@ def _strip_tag(tree, tag):
     """
     Remove all tags that have the tag name ``tag``
     """
-    for el in tree:
+    for el in tree.iter():
         if el.tag == tag:
-            tree.remove(el)
+            el.getparent().remove(el)
 
 
 def get_zip_file_handler(file_path):
