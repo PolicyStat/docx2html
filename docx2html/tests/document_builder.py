@@ -11,6 +11,8 @@ templates = {
     'table': 'table.xml',
     'tc': 'tc.xml',
     'tr': 'tr.xml',
+    'styles': 'styles.xml',
+    'style': 'style.xml',
 }
 
 env = Environment(
@@ -117,4 +119,24 @@ class DocxBuilder(object):
         kwargs = {
             'p_tag': p_tag,
         }
+        return template.render(**kwargs)
+
+    @classmethod
+    def styles_xml(self, style_tags):
+        template = env.get_template(templates['styles'])
+
+        kwargs = {
+            'style_tags': style_tags,
+        }
+        return template.render(**kwargs)
+
+    @classmethod
+    def style(self, style_id, value):
+        template = env.get_template(templates['style'])
+
+        kwargs = {
+            'style_id': style_id,
+            'value': value,
+        }
+
         return template.render(**kwargs)
