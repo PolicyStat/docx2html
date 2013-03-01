@@ -659,16 +659,16 @@ def get_style_dict(tree):
     # This is a partial document and actual h1 is the document title, which
     # will be displayed elsewhere.
     headers = {
-        'Heading 1': 'h2',
-        'Heading 2': 'h3',
-        'Heading 3': 'h4',
-        'Heading 4': 'h5',
-        'Heading 5': 'h6',
-        'Heading 6': 'h6',
-        'Heading 7': 'h6',
-        'Heading 8': 'h6',
-        'Heading 9': 'h6',
-        'Heading 10': 'h6',
+        'heading 1': 'h2',
+        'heading 2': 'h3',
+        'heading 3': 'h4',
+        'heading 4': 'h5',
+        'heading 5': 'h6',
+        'heading 6': 'h6',
+        'heading 7': 'h6',
+        'heading 8': 'h6',
+        'heading 9': 'h6',
+        'heading 10': 'h6',
     }
     if tree is None:
         return {}
@@ -685,7 +685,7 @@ def get_style_dict(tree):
         name = el.find('%sname' % w_namespace)
         if name is None:
             continue
-        value = name.get('%sval' % w_namespace)
+        value = name.get('%sval' % w_namespace).lower()
         if value in headers:
             el_result['header'] = headers[value]
 
