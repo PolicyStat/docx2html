@@ -6,6 +6,7 @@ from copy import copy
 from docx2html.core import (
     _is_top_level_upper_roman,
     create_html,
+    get_style_dict,
     get_font_size,
     get_image_id,
     get_li_nodes,
@@ -575,3 +576,20 @@ class HeaderFooterTagsWithContent(_TranslationTestCase):
         body = li + footer_tag
         xml = DXB.xml(body)
         return etree.fromstring(xml)
+
+
+class StylesParsingTestCase(_TranslationTestCase):
+    expected_output = '<html></html>'
+
+    def get_xml(self):
+        return etree.fromstring(DXB.xml(''))
+
+    def test_get_headings(self):
+
+        styles = [
+            DXB.style('heading 1', 'heading 1'),
+        ]
+        xml = DXB.styles_xml(styles)
+        styles_xml = etree.fromstring(xml)
+        styles_dict = get_style_dict(styles_xml)
+        self.assertEqual(styles_dict['heading 1']['header'], 'h2')
