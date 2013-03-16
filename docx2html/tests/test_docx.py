@@ -6,7 +6,7 @@ from zipfile import ZipFile
 from nose.plugins.skip import SkipTest
 from nose.tools import assert_raises
 
-from docx2html.tests import collapse_html
+from docx2html.tests import assert_html_equal
 from docx2html import convert
 from docx2html.core import (
     _get_document_data,
@@ -15,14 +15,6 @@ from docx2html.core import (
 from docx2html.exceptions import (
     ConversionFailed,
 )
-
-
-def assert_html_equal(actual_html, expected_html):
-    assert collapse_html(
-        actual_html,
-    ) == collapse_html(
-        expected_html
-    ), actual_html
 
 
 def test_extract_html():

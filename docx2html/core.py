@@ -902,7 +902,7 @@ def get_list_data(li_nodes, meta_data):
     list_contents = []
 
     def _build_li(list_contents):
-        data = '<br />'.join(t for t in list_contents if t is not None)
+        data = '<br />'.join(string_function(t) for t in list_contents if t is not None)
         return etree.XML('<li>%s</li>' % data)
 
     def _build_non_li_content(el, meta_data):
@@ -1418,9 +1418,10 @@ def _make_void_elements_self_close(html):
         r'br',
         r'img',
     ]
+    html = string_function(html)
     for tag in void_tags:
         regex = re.compile(r'<%s.*?>' % tag)
-        matches = regex.findall(str(html))
+        matches = regex.findall(html)
         for match in matches:
             new_tag = match.strip('<>')
             new_tag = '<%s />' % new_tag
