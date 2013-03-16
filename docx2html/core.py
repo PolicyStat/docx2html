@@ -2,6 +2,7 @@ import cgi
 import os
 import os.path
 import re
+import sys
 from PIL import Image
 from lxml import etree
 from lxml.etree import XMLSyntaxError
@@ -16,6 +17,18 @@ from docx2html.exceptions import (
     UnintendedTag,
     SyntaxNotSupported,
 )
+
+
+PYTHON_VERSION = sys.version[0]
+
+
+def _get_etree_tostring_kwargs():
+    tostring_kwargs = {
+        'method': 'text',
+    }
+    if PYTHON_VERSION == '2':
+        tostring_kwargs['encoding'] = unicode
+    return tostring_kwargs
 
 DETECT_FONT_SIZE = False
 EMUS_PER_PIXEL = 9525
@@ -195,12 +208,11 @@ def is_header(el, meta_data):
 
     # If a paragraph is longer than eight words it is likely not supposed to be
     # an h tag.
+    tostring_kwargs = _get_etree_tostring_kwargs()
     num_words = len(
         etree.tostring(
             el,
-            encoding=unicode,
-            method='text',
-        ).split(' ')
+            **tostring_kwargs).split(' ')
     )
     if num_words > 8:
         return False
@@ -250,7 +262,8 @@ def has_text(p):
     this is the case we do not want that tag interfering with things like
     lists. Detect if this tag has any content.
     """
-    return '' != etree.tostring(p, encoding=unicode, method='text').strip()
+    tostring_kwargs = _get_etree_tostring_kwargs()
+    return '' != etree.tostring(p, **tostring_kwargs).strip()
 
 
 def is_last_li(li, meta_data, current_numId):
