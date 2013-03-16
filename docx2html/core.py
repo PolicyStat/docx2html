@@ -178,8 +178,7 @@ def is_natural_header(el, styles_dict):
     if (
             style_id in styles_dict and
             'header' in styles_dict[style_id] and
-            styles_dict[style_id]['header']
-        ):
+            styles_dict[style_id]['header']):
         return styles_dict[style_id]['header']
 
 
@@ -1031,8 +1030,7 @@ def get_tr_data(tr, meta_data, row_spans):
             # ignored.
             if (
                     v_merge is not None and
-                    v_merge.get('%sval' % w_namespace) != 'restart'
-                ):
+                    v_merge.get('%sval' % w_namespace) != 'restart'):
                 continue
 
             # Loop through each and build a list of all the content.
@@ -1085,8 +1083,7 @@ def get_tr_data(tr, meta_data, row_spans):
             # here.
             if (
                     v_merge is not None and
-                    v_merge.get('%sval' % w_namespace) == 'restart'
-                ):
+                    v_merge.get('%sval' % w_namespace) == 'restart'):
                 rowspan = next(row_spans)
                 td_el.set('rowspan', '%d' % rowspan)
 
