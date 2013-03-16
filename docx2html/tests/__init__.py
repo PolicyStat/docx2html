@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from unittest import TestCase
 import re
 
@@ -19,18 +21,18 @@ def collapse_html(html):
     """
     Remove insignificant whitespace from the html.
 
-    >>> print collapse_html('''\\
+    >>> print(collapse_html('''\\
     ...     <h1>
     ...         Heading
     ...     </h1>
-    ... ''')
+    ... '''))
     <h1>Heading</h1>
-    >>> print collapse_html('''\\
+    >>> print(collapse_html('''\\
     ...     <p>
     ...         Paragraph with
     ...         multiple lines.
     ...     </p>
-    ... ''')
+    ... '''))
     <p>Paragraph with multiple lines.</p>
     """
     def smart_space(match):

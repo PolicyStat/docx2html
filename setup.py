@@ -11,7 +11,9 @@ except ImportError:
     from setuptools import setup, find_packages  # noqa
 
 rel_file = lambda *args: os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), *args)
+    os.path.dirname(
+        os.path.abspath(__file__),
+    ), *args)
 
 
 def get_file(filename):
@@ -34,7 +36,7 @@ setup(
     packages=find_packages(),
     scripts=[],
     zip_safe=False,
-    install_requires=['lxml==2.2.4', 'pillow==1.7.7'],
+    install_requires=['lxml==3.1.0', 'pillow==2.0.0'],
     cmdclass={},
     classifiers=[
         "Development Status :: 3 - Alpha",
