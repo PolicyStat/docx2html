@@ -94,7 +94,7 @@ class DocxBuilder(object):
             return template.render(p_tag=cell_value)
 
         def _tr(rows, text):
-            tcs = [_tc(text.next()) for _ in range(rows)]
+            tcs = [_tc(next(text)) for _ in range(rows)]
             template = env.get_template(templates['tr'])
             return template.render(table_cells=tcs)
 

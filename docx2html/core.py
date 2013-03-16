@@ -208,11 +208,12 @@ def is_header(el, meta_data):
     # If a paragraph is longer than eight words it is likely not supposed to be
     # an h tag.
     tostring_kwargs = _get_etree_tostring_kwargs()
-    num_words = len(
-        etree.tostring(
-            el,
-            **tostring_kwargs).split(' ')
-    )
+    text = etree.tostring(el, **tostring_kwargs)
+    if PYTHON_VERSION == '2':
+        text = unicode(text)
+    elif PYTHON_VERSION == '3':
+        text = str(text)
+    num_words = len(text.split(' '))
     if num_words > 8:
         return False
 
