@@ -6,6 +6,7 @@ import re
 from docx2html.core import (
     MetaData,
     create_html,
+    string_function,
 )
 
 
@@ -49,7 +50,7 @@ def collapse_html(html):
     html = re.sub(
         r'(>?)\s*\n\s*(<?)',
         smart_space,
-        html,
+        string_function(html),
     )
     return html.strip()
 

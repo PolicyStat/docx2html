@@ -30,6 +30,15 @@ def _get_etree_tostring_kwargs():
         tostring_kwargs['encoding'] = unicode
     return tostring_kwargs
 
+
+def _string_function():
+    if PYTHON_VERSION == '2':
+        return unicode
+    elif PYTHON_VERSION == '3':
+        return str
+    raise NotImplementedError('Your version of python is not supported')
+string_function = _string_function()
+
 DETECT_FONT_SIZE = False
 EMUS_PER_PIXEL = 9525
 
@@ -209,10 +218,7 @@ def is_header(el, meta_data):
     # an h tag.
     tostring_kwargs = _get_etree_tostring_kwargs()
     text = etree.tostring(el, **tostring_kwargs)
-    if PYTHON_VERSION == '2':
-        text = unicode(text)
-    elif PYTHON_VERSION == '3':
-        text = str(text)
+    text = string_function(text)
     num_words = len(text.split(' '))
     if num_words > 8:
         return False
@@ -1414,7 +1420,7 @@ def _make_void_elements_self_close(html):
     ]
     for tag in void_tags:
         regex = re.compile(r'<%s.*?>' % tag)
-        matches = regex.findall(html)
+        matches = regex.findall(str(html))
         for match in matches:
             new_tag = match.strip('<>')
             new_tag = '<%s />' % new_tag
