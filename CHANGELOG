@@ -2,6 +2,12 @@
 Changelog
 =========
 
+* 0.1.7
+    * If the indentation level of a set of lists (with the same list id) were
+      mangled (Starting off with a higher indentation level followed by a
+      lower) then the entire sub list (the list with the lower indentation
+      level) would not be added to the root list, thusly removing it from the
+      final output. This issue has been addressed.
 * 0.1.6
     * Header detection was relying on case. However it is possible for a lower
       case version of headers to show up. Those are now handled correctly.
