@@ -27,13 +27,13 @@ def _get_etree_tostring_kwargs():
         'method': 'text',
     }
     if PYTHON_VERSION == '2':
-        tostring_kwargs['encoding'] = unicode
+        tostring_kwargs['encoding'] = unicode  # noqa
     return tostring_kwargs
 
 
 def _string_function():
     if PYTHON_VERSION == '2':
-        return unicode
+        return unicode  # noqa
     elif PYTHON_VERSION == '3':
         return str
     raise NotImplementedError('Your version of python is not supported')
@@ -902,7 +902,10 @@ def get_list_data(li_nodes, meta_data):
     list_contents = []
 
     def _build_li(list_contents):
-        data = '<br />'.join(string_function(t) for t in list_contents if t is not None)
+        data = '<br />'.join(
+            string_function(t) for t in list_contents if
+            t is not None
+        )
         return etree.XML('<li>%s</li>' % data)
 
     def _build_non_li_content(el, meta_data):
@@ -1407,6 +1410,7 @@ def create_html(tree, meta_data):
     result = etree.tostring(
         new_html,
         method='html',
+        encoding=string_function,
         with_tail=True,
     )
     return _make_void_elements_self_close(result)

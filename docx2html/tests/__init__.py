@@ -11,11 +11,11 @@ from docx2html.core import (
 
 
 def assert_html_equal(actual_html, expected_html):
-    assert collapse_html(
-        actual_html,
-    ) == collapse_html(
-        expected_html
-    ), actual_html
+    actual_collapsed = collapse_html(actual_html)
+    expected_collapsed = collapse_html(expected_html)
+    print(actual_collapsed)
+    print(expected_collapsed)
+    assert actual_collapsed == expected_collapsed
 
 
 def collapse_html(html):

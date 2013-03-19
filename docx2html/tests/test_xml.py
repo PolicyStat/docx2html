@@ -21,7 +21,7 @@ from docx2html.tests import (
 
 
 class SimpleListTestCase(_TranslationTestCase):
-    expected_output = b'''
+    expected_output = '''
         <html>
             <ol data-list-type="decimal">
                 <li>AAA</li>
@@ -65,7 +65,7 @@ class SimpleListTestCase(_TranslationTestCase):
 
 
 class TableInListTestCase(_TranslationTestCase):
-    expected_output = b'''
+    expected_output = '''
         <html>
             <ol data-list-type="decimal">
                 <li>AAA<br />
@@ -135,7 +135,7 @@ class RomanNumeralToHeadingTestCase(_TranslationTestCase):
             2: 'upperRoman',
         }
     }
-    expected_output = b'''
+    expected_output = '''
         <html>
             <h2>AAA</h2>
             <ol data-list-type="decimal">
@@ -203,7 +203,7 @@ class RomanNumeralToHeadingAllBoldTestCase(_TranslationTestCase):
             0: 'upperRoman',
         }
     }
-    expected_output = b'''
+    expected_output = '''
         <html>
             <h2>AAA</h2>
             <h2>BBB</h2>
@@ -234,7 +234,7 @@ class ImageTestCase(_TranslationTestCase):
         'rId0': (4, 4),
         'rId1': (4, 4),
     }
-    expected_output = b'''
+    expected_output = '''
         <html>
             <p>
                 <img src="media/image1.jpeg" height="4" width="4" />
@@ -308,7 +308,7 @@ class ImageTestCase(_TranslationTestCase):
 
 
 class ListWithContinuationTestCase(_TranslationTestCase):
-    expected_output = b'''
+    expected_output = '''
         <html>
             <ol data-list-type="decimal">
                 <li>AAA<br />BBB</li>
@@ -358,7 +358,7 @@ class PictImageTestCase(_TranslationTestCase):
     image_sizes = {
         'rId0': (4, 4),
     }
-    expected_output = b'''
+    expected_output = '''
         <html>
             <p>
                 <img src="media/image1.jpeg" height="4" width="4" />
@@ -396,7 +396,7 @@ class PictImageTestCase(_TranslationTestCase):
 
 
 class PictImageMissingIdTestCase(_TranslationTestCase):
-    expected_output = b'''
+    expected_output = '''
         <html></html>
     '''
 
@@ -414,7 +414,7 @@ class PictImageMissingIdTestCase(_TranslationTestCase):
 
 
 class TableWithInvalidTag(_TranslationTestCase):
-    expected_output = b'''
+    expected_output = '''
         <html>
             <table>
                 <tr>
@@ -448,7 +448,7 @@ class HyperlinkStyledTestCase(_TranslationTestCase):
         'rId0': 'www.google.com',
     }
 
-    expected_output = b'''
+    expected_output = '''
     <html>
         <p><a href="www.google.com">link</a>.</p>
     </html>
@@ -469,7 +469,7 @@ class HyperlinkNoTextTestCase(_TranslationTestCase):
         'rId0': 'www.google.com',
     }
 
-    expected_output = b'''
+    expected_output = '''
     <html>
     </html>
     '''
@@ -487,7 +487,7 @@ class HyperlinkVanillaTestCase(_TranslationTestCase):
         'rId0': 'www.google.com',
     }
 
-    expected_output = b'''
+    expected_output = '''
     <html>
         <p><a href="www.google.com">link</a>.</p>
     </html>
@@ -510,7 +510,7 @@ class MissingFontInfoTestCase(_TranslationTestCase):
         },
     }
 
-    expected_output = b'''
+    expected_output = '''
     <html>
         <p><strong>AAA</strong></p>
     </html>
@@ -561,7 +561,7 @@ class MissingFontInfoTestCase(_TranslationTestCase):
 
 
 class HeaderFooterTagsWithContent(_TranslationTestCase):
-    expected_output = b'''
+    expected_output = '''
     <html>
         <ol data-list-type="decimal">
             <li>AAA</li>
@@ -579,7 +579,7 @@ class HeaderFooterTagsWithContent(_TranslationTestCase):
 
 
 class StylesParsingTestCase(_TranslationTestCase):
-    expected_output = b'<html></html>'
+    expected_output = '<html></html>'
 
     def get_xml(self):
         return etree.fromstring(DXB.xml(''))
