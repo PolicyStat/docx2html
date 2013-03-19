@@ -912,6 +912,15 @@ def get_list_data(li_nodes, meta_data):
                 del ol_dict[key]
         return current_ol
 
+    def _current_ol_in_root_ol():
+        # Checking to see if current_ol in root_ol does not work. Loop
+        # through each of the elements in root_ol and return true if one
+        # of them is current ol.
+        for el in root_ol:
+            if current_ol is root_ol:
+                return True
+        return False
+
     for li_node in li_nodes:
         w_namespace = get_namespace(li_node, 'w')
         if not is_li(li_node, meta_data):
@@ -991,6 +1000,9 @@ def get_list_data(li_nodes, meta_data):
         ol_dict=ol_dict,
         current_ol=current_ol,
     )
+
+    if not _current_ol_in_root_ol():
+        root_ol[-1].append(current_ol)
 
     return root_ol, visited_nodes
 
