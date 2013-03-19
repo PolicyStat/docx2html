@@ -25,9 +25,8 @@ PYTHON_VERSION = sys.version[0]
 def _get_etree_tostring_kwargs():
     tostring_kwargs = {
         'method': 'text',
+        'encoding': string_function,
     }
-    if PYTHON_VERSION == '2':
-        tostring_kwargs['encoding'] = unicode  # noqa
     return tostring_kwargs
 
 
@@ -912,7 +911,11 @@ def get_list_data(li_nodes, meta_data):
         w_namespace = get_namespace(el, 'w')
         if el.tag == '%stbl' % w_namespace:
             new_el, visited_nodes = get_table_data(el, meta_data)
-            return etree.tostring(new_el), visited_nodes
+            li_content_text = etree.tostring(
+                new_el,
+                encoding=string_function,
+            )
+            return li_content_text, visited_nodes
         elif el.tag == '%sp' % w_namespace:
             return get_p_data(el, meta_data), [el]
         if has_text(el):
@@ -1061,14 +1064,22 @@ def get_tr_data(tr, meta_data, row_spans):
                         meta_data,
                     )
                     visited_nodes.extend(list_visited_nodes)
-                    texts.append(etree.tostring(list_el))
+                    list_el_text = etree.tostring(
+                        list_el,
+                        encoding=string_function,
+                    )
+                    texts.append(list_el_text)
                 elif td_content.tag == '%stbl' % w_namespace:
                     table_el, table_visited_nodes = get_table_data(
                         td_content,
                         meta_data,
                     )
                     visited_nodes.extend(table_visited_nodes)
-                    texts.append(etree.tostring(table_el))
+                    table_el_text = etree.tostring(
+                        table_el,
+                        encoding=string_function,
+                    )
+                    texts.append(table_el_text)
                 elif td_content.tag == '%stcPr' % w_namespace:
                     # Do nothing
                     visited_nodes.append(td_content)
