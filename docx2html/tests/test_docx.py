@@ -25,8 +25,7 @@ def test_extract_html():
         'simple.docx',
     )
     actual_html = convert(file_path)
-    assert_html_equal(actual_html,
-    '''
+    assert_html_equal(actual_html, '''
     <html>
         <p>
           Simple text
@@ -58,8 +57,7 @@ def test_nested_list():
         'nested_lists.docx',
     )
     actual_html = convert(file_path)
-    assert_html_equal(actual_html,
-    '''
+    assert_html_equal(actual_html, '''
     <html>
         <ol data-list-type="decimal">
             <li>one</li>
@@ -103,8 +101,7 @@ def test_simple_list():
         'simple_lists.docx',
     )
     actual_html = convert(file_path)
-    assert_html_equal(actual_html,
-    '''
+    assert_html_equal(actual_html, '''
     <html>
         <ol data-list-type="decimal">
             <li>One</li>
@@ -124,8 +121,7 @@ def test_inline_tags():
         'inline_tags.docx',
     )
     actual_html = convert(file_path)
-    assert_html_equal(actual_html,
-    '''
+    assert_html_equal(actual_html, '''
     <html><p>This sentence has some <strong>bold</strong>, some <em>italics</em> and some <strong>underline</strong>, as well as a <a href="http://www.google.com/">hyperlink</a>.</p></html>''')  # noqa
 
 
