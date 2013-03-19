@@ -165,8 +165,7 @@ def is_natural_header(el, styles_dict):
     if (
             style_id in styles_dict and
             'header' in styles_dict[style_id] and
-            styles_dict[style_id]['header']
-        ):
+            styles_dict[style_id]['header']):
         return styles_dict[style_id]['header']
 
 
@@ -287,6 +286,7 @@ def get_li_nodes(li, meta_data):
     yield li
     w_namespace = get_namespace(li, 'w')
     current_numId = get_numId(li, w_namespace)
+    starting_ilvl = get_ilvl(li, w_namespace)
     el = li
     while True:
         el = el.getnext()
@@ -301,6 +301,11 @@ def get_li_nodes(li, meta_data):
         if _is_top_level_upper_roman(el, meta_data):
             break
 
+        if (
+                is_li(el, meta_data) and
+                (starting_ilvl > get_ilvl(el, w_namespace))):
+            break
+
         # If the list id of the next tag is different that the previous that
         # means a new list being made (not nested)
         if is_last_li(el, meta_data, current_numId):
@@ -309,7 +314,6 @@ def get_li_nodes(li, meta_data):
                 # Not a subsequent list.
                 yield el
             break
-
         yield el
 
 
@@ -1018,8 +1022,7 @@ def get_tr_data(tr, meta_data, row_spans):
             # ignored.
             if (
                     v_merge is not None and
-                    v_merge.get('%sval' % w_namespace) != 'restart'
-                ):
+                    v_merge.get('%sval' % w_namespace) != 'restart'):
                 continue
 
             # Loop through each and build a list of all the content.
@@ -1072,8 +1075,7 @@ def get_tr_data(tr, meta_data, row_spans):
             # here.
             if (
                     v_merge is not None and
-                    v_merge.get('%sval' % w_namespace) == 'restart'
-                ):
+                    v_merge.get('%sval' % w_namespace) == 'restart'):
                 rowspan = next(row_spans)
                 td_el.set('rowspan', '%d' % rowspan)
 

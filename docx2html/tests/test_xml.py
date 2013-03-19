@@ -593,3 +593,32 @@ class StylesParsingTestCase(_TranslationTestCase):
         styles_xml = etree.fromstring(xml)
         styles_dict = get_style_dict(styles_xml)
         self.assertEqual(styles_dict['heading 1']['header'], 'h2')
+
+
+class MangledIlvlTestCase(_TranslationTestCase):
+    expected_output = '''
+    <html>
+        <ol data-list-type="decimal">
+            <li>AAA</li>
+        </ol>
+        <ol data-list-type="decimal">
+            <li>BBB</li>
+        </ol>
+        <ol data-list-type="decimal">
+            <li>CCC</li>
+        </ol>
+    </html>
+    '''
+
+    def get_xml(self):
+        li_text = [
+            ('AAA', 0, 2),
+            ('BBB', 1, 1),
+            ('CCC', 0, 1),
+        ]
+        lis = ''
+        for text, ilvl, numId in li_text:
+            lis += DXB.li(text=text, ilvl=ilvl, numId=numId)
+
+        xml = DXB.xml(lis)
+        return etree.fromstring(xml)
