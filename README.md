@@ -3,8 +3,6 @@ docx2html
 =========
 
 
-[![Build Status](https://travis-ci.org/PolicyStat/docx2html.png)](https://travis-ci.org/PolicyStat/docx2html)
-
 Convert a docx (OOXML) file to semantic HTML.
 All of Word formatting nonsense is stripped away and
 you're left with a cleanly-formatted version of the content.
