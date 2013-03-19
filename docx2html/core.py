@@ -743,7 +743,7 @@ def get_image_sizes(tree):
                 ext = el.find('%sext' % a_namespace)
                 cx = int(ext.get('cx')) / EMUS_PER_PIXEL
                 cy = int(ext.get('cy')) / EMUS_PER_PIXEL
-                result[get_image_id(d)] = (cx, cy)
+                result[get_image_id(d)] = (int(cx), int(cy))
     return result
 
 

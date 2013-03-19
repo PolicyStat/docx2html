@@ -470,10 +470,10 @@ def test_attachment_is_tiff():
         if file_path.endswith('.gif'):
             image_file = file_path
     assert image_file is not None
-    with open(image_file) as f:
+    with open(image_file, 'rb') as f:
         magic_number = f.read()[:4]
     # Make sure the image is actually a gif.
-    assert magic_number == 'GIF8'
+    assert magic_number == b'GIF8', magic_number
 
 
 def test_headers_with_full_line_styles():
