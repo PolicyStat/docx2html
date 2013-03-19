@@ -286,6 +286,7 @@ def get_li_nodes(li, meta_data):
     yield li
     w_namespace = get_namespace(li, 'w')
     current_numId = get_numId(li, w_namespace)
+    starting_ilvl = get_ilvl(li, w_namespace)
     el = li
     while True:
         el = el.getnext()
@@ -298,6 +299,11 @@ def get_li_nodes(li, meta_data):
         # Stop the lists if you come across a list item that should be a
         # heading.
         if _is_top_level_upper_roman(el, meta_data):
+            break
+
+        if (
+                is_li(el, meta_data) and
+                (starting_ilvl > get_ilvl(el, w_namespace))):
             break
 
         # If the list id of the next tag is different that the previous that
@@ -991,9 +997,6 @@ def get_list_data(li_nodes, meta_data):
         ol_dict=ol_dict,
         current_ol=current_ol,
     )
-
-    if current_ol is not root_ol:
-        root_ol[-1].append(current_ol)
 
     return root_ol, visited_nodes
 
