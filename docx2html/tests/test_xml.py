@@ -602,11 +602,10 @@ class MangledIlvlTestCase(_TranslationTestCase):
             <li>AAA</li>
         </ol>
         <ol data-list-type="decimal">
-            <li>BBB
-                <ol data-list-type="decimal">
-                    <li>CCC</li>
-                </ol>
-            </li>
+            <li>BBB</li>
+        </ol>
+        <ol data-list-type="decimal">
+            <li>CCC</li>
         </ol>
     </html>
     '''
