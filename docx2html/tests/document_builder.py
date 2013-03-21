@@ -3,16 +3,18 @@ from jinja2 import Environment, PackageLoader
 templates = {
     'drawing': 'drawing.xml',
     'hyperlink': 'hyperlink.xml',
+    'insert': 'insert.xml',
     'main': 'base.xml',
     'p': 'p.xml',
     'pict': 'pict.xml',
     'r': 'r.xml',
     'sectPr': 'sectPr.xml',
+    'smartTag': 'smart_tag.xml',
+    'style': 'style.xml',
+    'styles': 'styles.xml',
     'table': 'table.xml',
     'tc': 'tc.xml',
     'tr': 'tr.xml',
-    'styles': 'styles.xml',
-    'style': 'style.xml',
 }
 
 env = Environment(
@@ -60,6 +62,22 @@ class DocxBuilder(object):
         template = env.get_template(templates['hyperlink'])
         kwargs = {
             'r_id': r_id,
+            'run_tags': run_tags,
+        }
+        return template.render(**kwargs)
+
+    @classmethod
+    def insert_tag(self, run_tags):
+        template = env.get_template(templates['insert'])
+        kwargs = {
+            'run_tags': run_tags,
+        }
+        return template.render(**kwargs)
+
+    @classmethod
+    def smart_tag(self, run_tags):
+        template = env.get_template(templates['smartTag'])
+        kwargs = {
             'run_tags': run_tags,
         }
         return template.render(**kwargs)
