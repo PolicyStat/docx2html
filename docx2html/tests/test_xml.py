@@ -443,6 +443,25 @@ class TableWithInvalidTag(_TranslationTestCase):
         return etree.fromstring(xml)
 
 
+class NonStandardTextTagsTestCase(_TranslationTestCase):
+    expected_output = '''
+    <html>
+        <p>insert smarttag</p>
+    </html>
+    '''
+
+    def get_xml(self):
+        run_tags = [DXB.r_tag(i) for i in 'insert ']
+        insert_tag = DXB.insert_tag(run_tags)
+        run_tags = [DXB.r_tag(i) for i in 'smarttag']
+        smart_tag = DXB.smart_tag(run_tags)
+
+        run_tags = [insert_tag, smart_tag]
+        body = DXB.p_tag(run_tags)
+        xml = DXB.xml(body)
+        return etree.fromstring(xml)
+
+
 class HyperlinkStyledTestCase(_TranslationTestCase):
     relationship_dict = {
         'rId0': 'www.google.com',
@@ -457,6 +476,26 @@ class HyperlinkStyledTestCase(_TranslationTestCase):
     def get_xml(self):
         run_tags = []
         run_tags.append(DXB.r_tag('link', is_bold=True))
+        run_tags = [DXB.hyperlink_tag(r_id='rId0', run_tags=run_tags)]
+        run_tags.append(DXB.r_tag('.', is_bold=False))
+        body = DXB.p_tag(run_tags)
+        xml = DXB.xml(body)
+        return etree.fromstring(xml)
+
+
+class HyperlinkWithMultipleRunsTestCase(_TranslationTestCase):
+    relationship_dict = {
+        'rId0': 'www.google.com',
+    }
+
+    expected_output = '''
+    <html>
+        <p><a href="www.google.com">link</a>.</p>
+    </html>
+    '''
+
+    def get_xml(self):
+        run_tags = [DXB.r_tag(i) for i in 'link']
         run_tags = [DXB.hyperlink_tag(r_id='rId0', run_tags=run_tags)]
         run_tags.append(DXB.r_tag('.', is_bold=False))
         body = DXB.p_tag(run_tags)
