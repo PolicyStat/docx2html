@@ -2,6 +2,9 @@
 Changelog
 =========
 
+* 0.1.9
+    * There was a problem for some lists that would cause missing content if
+      the list id's were not well behaved. This issue has been addressed.
 * 0.1.8
     * Fixed missing content with hyperlinks with more than one run tag and
       smartTags.
