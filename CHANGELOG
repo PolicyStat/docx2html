@@ -5,6 +5,8 @@ Changelog
 * 0.1.8
     * Fixed missing content with hyperlinks with more than one run tag and
       smartTags.
+    * Certain image types are now being ignored. These include: emf, wmf and
+      svg.
 * 0.1.7
     * If the indentation level of a set of lists (with the same list id) were
       mangled (Starting off with a higher indentation level followed by a
