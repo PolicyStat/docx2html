@@ -710,3 +710,35 @@ class MangledIlvlTestCase(_TranslationTestCase):
 
         xml = DXB.xml(lis)
         return etree.fromstring(xml)
+
+
+class SeperateListsTestCase(_TranslationTestCase):
+    expected_output = '''
+    <html>
+        <ol data-list-type="decimal">
+            <li>AAA</li>
+        </ol>
+        <ol data-list-type="decimal">
+            <li>BBB</li>
+        </ol>
+        <ol data-list-type="decimal">
+            <li>CCC</li>
+        </ol>
+    </html>
+    '''
+
+    def get_xml(self):
+        li_text = [
+            ('AAA', 0, 2),
+            # Because AAA and CCC are part of the same list (same list id)
+            # and BBB is different, these need to be split into three
+            # lists (or lose everything from BBB and after.
+            ('BBB', 0, 1),
+            ('CCC', 0, 2),
+        ]
+        lis = ''
+        for text, ilvl, numId in li_text:
+            lis += DXB.li(text=text, ilvl=ilvl, numId=numId)
+
+        xml = DXB.xml(lis)
+        return etree.fromstring(xml)
