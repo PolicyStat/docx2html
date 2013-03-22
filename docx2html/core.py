@@ -1221,7 +1221,7 @@ def get_p_data(p, meta_data, is_td=False):
             hyperlink_id = el.get('%sid' % r_namespace)
 
             # Once we have the hyperlink_id then we need to replace the
-            # hyperlink tag with its child run tag.
+            # hyperlink tags with its child run tag.
             text = ''
             r = None
             for r in el.xpath('.//w:r', namespaces=el.nsmap):
