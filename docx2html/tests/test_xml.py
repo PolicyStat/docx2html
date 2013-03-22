@@ -310,6 +310,9 @@ class ImageTestCase(_TranslationTestCase):
 
 class SkipImageTestCase(_TranslationTestCase):
     relationship_dict = {
+        # These are only commented out because ``get_relationship_info`` strips
+        # them out, however since we have image_sizes I want to show that they
+        # are intentionally not added to the ``relationship_dict``
         #'rId0': 'media/image1.svg',
         #'rId1': 'media/image2.emf',
         #'rId2': 'media/image3.wmf',
