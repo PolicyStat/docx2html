@@ -1,4 +1,5 @@
 import cgi
+import logging
 import os
 import os.path
 import re
@@ -19,6 +20,9 @@ from docx2html.exceptions import (
 
 DETECT_FONT_SIZE = False
 EMUS_PER_PIXEL = 9525
+NSMAP = {}
+
+logger = logging.getLogger(__name__)
 
 ###
 # Help functions
@@ -61,7 +65,9 @@ def ensure_tag(tags):
 
 
 def get_namespace(el, namespace):
-    return '{%s}' % el.nsmap[namespace]
+    if namespace not in NSMAP:
+        NSMAP[namespace] = '{%s}' % el.nsmap[namespace]
+    return NSMAP[namespace]
 
 
 def convert_image(target, image_size):
@@ -749,6 +755,8 @@ def get_relationship_info(tree, media, image_sizes):
             continue
         # Store the target in the result dict.
         target = el.get('Target')
+        if any(target.lower().endswith(ext) for ext in ['emf', 'wmf', 'svg']):
+            continue
         if target in media:
             image_size = image_sizes.get(el_id)
             target = convert_image(media[target], image_size)
@@ -848,7 +856,9 @@ def _get_document_data(f, image_handler=None):
         image_sizes
     )
     styles_dict = get_style_dict(styles_xml)
-    font_sizes_dict = get_font_sizes_dict(document_xml, styles_dict)
+    font_sizes_dict = defaultdict(int)
+    if DETECT_FONT_SIZE:
+        font_sizes_dict = get_font_sizes_dict(document_xml, styles_dict)
     meta_data = MetaData(
         numbering_dict=numbering_dict,
         relationship_dict=relationship_dict,
@@ -1177,6 +1187,7 @@ def get_p_data(p, meta_data, is_td=False):
         '%sr' % w_namespace,
         '%shyperlink' % w_namespace,
         '%sins' % w_namespace,
+        '%ssmartTag' % w_namespace,
     )
     elements = []
     # Get the tags that are r tags or hyperlink tags
@@ -1193,7 +1204,7 @@ def get_p_data(p, meta_data, is_td=False):
         hyperlink_id = None
         # Hyperlinks and insert tags need to be handled differently than
         # normals runs.
-        if el.tag == '%sins' % w_namespace:
+        if el.tag in ('%sins' % w_namespace, '%ssmartTag' % w_namespace):
             # Insert tags can have an arbitrary number of r tags in them. Find
             # each and insert them into the elements list as the next elements
             # in reverse order.
@@ -1210,9 +1221,13 @@ def get_p_data(p, meta_data, is_td=False):
             hyperlink_id = el.get('%sid' % r_namespace)
 
             # Once we have the hyperlink_id then we need to replace the
-            # hyperlink tag with its child run tag.
-            child_run_tag = el.find('%sr' % w_namespace)
-            if child_run_tag is None:
+            # hyperlink tags with its child run tag.
+            text = ''
+            r = None
+            for r in el.xpath('.//w:r', namespaces=el.nsmap):
+                for child in get_raw_data(r):
+                    text += handle_t_tag(child, r, None, True, True, meta_data)
+            if r is None:
                 if has_text(el):
                     # If there is text in this hyperlink we need to raise an
                     # exception so that we don't lose content.
@@ -1224,7 +1239,10 @@ def get_p_data(p, meta_data, is_td=False):
                 # cleaning up old tags, as such this tag has no content and
                 # should be ignored.
                 continue
-            el = child_run_tag
+            else:
+                t_el = r.find('%st' % w_namespace)
+                t_el.text = text
+            el = r
 
         # t tags hold all the text content.
         for child in get_raw_data(el):
