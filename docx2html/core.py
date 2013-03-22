@@ -21,6 +21,7 @@ from docx2html.exceptions import (
 DETECT_FONT_SIZE = False
 EMUS_PER_PIXEL = 9525
 NSMAP = {}
+IMAGE_EXTENSIONS_TO_SKIP = ['emf', 'wmf', 'svg']
 
 logger = logging.getLogger(__name__)
 
@@ -755,7 +756,9 @@ def get_relationship_info(tree, media, image_sizes):
             continue
         # Store the target in the result dict.
         target = el.get('Target')
-        if any(target.lower().endswith(ext) for ext in ['emf', 'wmf', 'svg']):
+        if any(
+                target.lower().endswith(ext) for
+                ext in IMAGE_EXTENSIONS_TO_SKIP):
             continue
         if target in media:
             image_size = image_sizes.get(el_id)
@@ -1221,7 +1224,7 @@ def get_p_data(p, meta_data, is_td=False):
             hyperlink_id = el.get('%sid' % r_namespace)
 
             # Once we have the hyperlink_id then we need to replace the
-            # hyperlink tags with its child run tag.
+            # hyperlink tag with its child run tags.
             text = ''
             r = None
             for r in el.xpath('.//w:r', namespaces=el.nsmap):
