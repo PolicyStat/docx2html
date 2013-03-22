@@ -24,7 +24,7 @@ def get_description():
 
 setup(
     name="docx2html",
-    version="0.1.8",
+    version="0.1.9",
     description="docx (OOXML) to html converter",
     author="Jason Ward",
     author_email="jason.louard.ward@gmail.com",
