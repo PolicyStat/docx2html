@@ -313,13 +313,18 @@ def get_li_nodes(li, meta_data):
                 (starting_ilvl > get_ilvl(el, w_namespace))):
             break
 
+        new_numId = get_numId(el, w_namespace)
+        if new_numId is None or new_numId == -1:
+            # Not a p tag or a list item
+            yield el
+            continue
         # If the list id of the next tag is different that the previous that
         # means a new list being made (not nested)
+        if current_numId != new_numId:
+            # Not a subsequent list.
+            break
         if is_last_li(el, meta_data, current_numId):
-            new_numId = get_numId(el, w_namespace)
-            if current_numId == new_numId:
-                # Not a subsequent list.
-                yield el
+            yield el
             break
         yield el
 
