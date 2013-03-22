@@ -6,10 +6,11 @@ from copy import copy
 from docx2html.core import (
     _is_top_level_upper_roman,
     create_html,
-    get_style_dict,
     get_font_size,
     get_image_id,
     get_li_nodes,
+    get_relationship_info,
+    get_style_dict,
     get_namespace,
     is_last_li,
 )
@@ -305,6 +306,51 @@ class ImageTestCase(_TranslationTestCase):
                 </p>
             </html>
         ''')
+
+
+class SkipImageTestCase(_TranslationTestCase):
+    relationship_dict = {
+        #'rId0': 'media/image1.svg',
+        #'rId1': 'media/image2.emf',
+        #'rId2': 'media/image3.wmf',
+    }
+    image_sizes = {
+        'rId0': (4, 4),
+        'rId1': (4, 4),
+        'rId2': (4, 4),
+    }
+    expected_output = '<html></html>'
+
+    @staticmethod
+    def image_handler(image_id, relationship_dict):
+        return relationship_dict.get(image_id)
+
+    def get_xml(self):
+        tags = [
+            DXB.drawing('rId2'),
+            DXB.drawing('rId3'),
+            DXB.drawing('rId4'),
+        ]
+        body = ''
+        for el in tags:
+            body += el
+
+        xml = DXB.xml(body)
+        return etree.fromstring(xml)
+
+    def test_get_relationship_info(self):
+        tree = self.get_xml()
+        media = {
+            'media/image1.svg': 'test',
+            'media/image2.emf': 'test',
+            'media/image3.wmf': 'test',
+        }
+        relationship_info = get_relationship_info(
+            tree,
+            media,
+            self.image_sizes,
+        )
+        self.assertEqual(relationship_info, {})
 
 
 class ListWithContinuationTestCase(_TranslationTestCase):
