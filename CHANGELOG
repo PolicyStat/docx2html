@@ -2,6 +2,8 @@
 Changelog
 =========
 
+* 0.1.10
+    * Added a user facing version
 * 0.1.9
     * There was a problem for some lists that would cause missing content if
       the list id's were not well behaved. This issue has been addressed.

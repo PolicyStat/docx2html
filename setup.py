@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import docx2html
 
 try:
     from setuptools import setup, find_packages
@@ -24,7 +25,7 @@ def get_description():
 
 setup(
     name="docx2html",
-    version="0.1.9",
+    version=docx2html.VERSION,
     description="docx (OOXML) to html converter",
     author="Jason Ward",
     author_email="jason.louard.ward@gmail.com",
