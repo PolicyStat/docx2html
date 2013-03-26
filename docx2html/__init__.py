@@ -4,4 +4,5 @@ __all__ = [
     convert.func_name,
 ]
 
+# Edit here and setup.py
 VERSION = '0.1.10'
