@@ -2,6 +2,10 @@
 Changelog
 =========
 
+* 0.1.11
+    * Sometimes in the OOXML an image will have a height or width of 0. If this
+      happens we are now ignoring the height and width in the OOXML and using
+      the full image instead.
 * 0.1.10
     * Added a user facing version
 * 0.1.9
