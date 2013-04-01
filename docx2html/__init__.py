@@ -5,4 +5,4 @@ __all__ = [
 ]
 
 # Edit here and setup.py
-VERSION = '0.1.10'
+VERSION = '0.1.11'
