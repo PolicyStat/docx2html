@@ -73,6 +73,9 @@ def get_namespace(el, namespace):
 
 def convert_image(target, image_size):
     _, extension = os.path.splitext(os.path.basename(target))
+    # If the image size has a zero in it early return
+    if image_size and not all(image_size):
+        return target
     # All the image types need to be converted to gif.
     invalid_extensions = (
         '.bmp',
@@ -1279,11 +1282,15 @@ def get_p_data(p, meta_data, is_td=False):
                 else:
                     target = meta_data.relationship_dict[image_id]
                     width, height = _get_image_size_from_image(target)
-                p_text += '<img src="%s" height="%d" width="%d"/>' % (
-                    src,
-                    height,
-                    width,
-                )
+                # Make sure the width and height are not zero
+                if all((width, height)):
+                    p_text += '<img src="%s" height="%d" width="%d" />' % (
+                        src,
+                        height,
+                        width,
+                    )
+                else:
+                    p_text += '<img src="%s" />' % src
 
     # This function does not return a p tag since other tag types need this as
     # well (td, li).

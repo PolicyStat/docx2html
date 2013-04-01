@@ -1,3 +1,4 @@
+import os
 import mock
 from itertools import chain
 from lxml import etree
@@ -5,13 +6,14 @@ from copy import copy
 
 from docx2html.core import (
     _is_top_level_upper_roman,
+    convert_image,
     create_html,
     get_font_size,
     get_image_id,
     get_li_nodes,
+    get_namespace,
     get_relationship_info,
     get_style_dict,
-    get_namespace,
     is_last_li,
 )
 from docx2html.tests.document_builder import DocxBuilder as DXB
@@ -354,6 +356,46 @@ class SkipImageTestCase(_TranslationTestCase):
             self.image_sizes,
         )
         self.assertEqual(relationship_info, {})
+
+
+class ImageNoSizeTestCase(_TranslationTestCase):
+    relationship_dict = {
+        'rId0': os.path.join(
+            os.path.abspath(os.path.dirname(__file__)),
+            '..',
+            'fixtures',
+            'bullet_go_gray.png',
+        )
+    }
+    image_sizes = {
+        'rId0': (0, 0),
+    }
+    expected_output = '''
+        <html>
+            <p>
+                <img src="%s" />
+            </p>
+        </html>
+    ''' % relationship_dict['rId0']
+
+    @staticmethod
+    def image_handler(image_id, relationship_dict):
+        return relationship_dict.get(image_id)
+
+    def get_xml(self):
+        drawing = DXB.drawing('rId0')
+        tags = [
+            drawing,
+        ]
+        body = ''
+        for el in tags:
+            body += el
+
+        xml = DXB.xml(body)
+        return etree.fromstring(xml)
+
+    def test_convert_image(self):
+        convert_image(self.relationship_dict['rId0'], self.image_sizes['rId0'])
 
 
 class ListWithContinuationTestCase(_TranslationTestCase):
