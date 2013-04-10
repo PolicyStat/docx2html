@@ -5,12 +5,14 @@ from lxml import etree
 from copy import copy
 
 from docx2html.core import (
+    DEFAULT_LIST_NUMBERING_STYLE,
     _is_top_level_upper_roman,
     convert_image,
     create_html,
     get_font_size,
     get_image_id,
     get_li_nodes,
+    get_ordered_list_type,
     get_namespace,
     get_relationship_info,
     get_style_dict,
@@ -26,13 +28,20 @@ from docx2html.tests import (
 class SimpleListTestCase(_TranslationTestCase):
     expected_output = '''
         <html>
-            <ol data-list-type="decimal">
+            <ol data-list-type="lower-alpha">
                 <li>AAA</li>
                 <li>BBB</li>
                 <li>CCC</li>
             </ol>
         </html>
     '''
+
+    # Ensure its not failing somewhere and falling back to decimal
+    numbering_dict = {
+        '1': {
+            0: 'lowerLetter',
+        }
+    }
 
     def get_xml(self):
         li_text = [
@@ -65,6 +74,40 @@ class SimpleListTestCase(_TranslationTestCase):
             result,
             [False, False, True],
         )
+
+    def test_get_list_type_valid(self):
+        meta_data = self.get_meta_data()
+        numId = '1'
+        ilvl = 0
+
+        # Show that for a valid combination of numId and ilvl that you get the
+        # correct list type.
+        list_type = get_ordered_list_type(meta_data, numId, ilvl)
+        self.assertEqual(list_type, 'lowerLetter')
+
+    def test_get_list_type_invalid_numId(self):
+        meta_data = self.get_meta_data()
+        numId = '2'  # Not valid
+        ilvl = 0
+
+        list_type = get_ordered_list_type(meta_data, numId, ilvl)
+        self.assertEqual(list_type, DEFAULT_LIST_NUMBERING_STYLE)
+
+    def test_get_list_type_invalid_ilvl(self):
+        meta_data = self.get_meta_data()
+        numId = '1'
+        ilvl = 1  # Not valid
+
+        list_type = get_ordered_list_type(meta_data, numId, ilvl)
+        self.assertEqual(list_type, DEFAULT_LIST_NUMBERING_STYLE)
+
+    def test_get_list_type_invalid_numId_and_ilvl(self):
+        meta_data = self.get_meta_data()
+        numId = '2'  # Not valid
+        ilvl = 1  # Not valid
+
+        list_type = get_ordered_list_type(meta_data, numId, ilvl)
+        self.assertEqual(list_type, DEFAULT_LIST_NUMBERING_STYLE)
 
 
 class TableInListTestCase(_TranslationTestCase):
