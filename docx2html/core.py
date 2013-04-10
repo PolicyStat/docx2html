@@ -887,7 +887,7 @@ def _get_document_data(f, image_handler=None):
 ###
 
 
-def get_list_type(meta_data, numId, ilvl):
+def get_ordered_list_type(meta_data, numId, ilvl):
     """
     Return the list type. If numId or ilvl not in the numbering dict then
     default to returning decimal.
@@ -980,7 +980,7 @@ def get_list_data(li_nodes, meta_data):
         ))
         ilvl = get_ilvl(li_node, w_namespace)
         numId = get_numId(li_node, w_namespace)
-        list_type = get_list_type(meta_data, numId, ilvl)
+        list_type = get_ordered_list_type(meta_data, numId, ilvl)
 
         # If the ilvl is greater than the current_ilvl or the list id is
         # changing then we have the first li tag in a nested list. We need to
