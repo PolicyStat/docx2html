@@ -2,7 +2,7 @@
 Changelog
 =========
 
-* 0.1.12
+* 0.2.0
     * If a list had a numId that was not stored in the numbering dict, then a
       key error would be thrown. Now if either the numId or the ilvl for a
       given list tag is invalid it defaults to returning a list type of

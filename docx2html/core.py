@@ -22,6 +22,7 @@ DETECT_FONT_SIZE = False
 EMUS_PER_PIXEL = 9525
 NSMAP = {}
 IMAGE_EXTENSIONS_TO_SKIP = ['emf', 'wmf', 'svg']
+DEFAULT_LIST_NUMBERING_STYLE = 'decimal'
 
 logger = logging.getLogger(__name__)
 
@@ -370,20 +371,20 @@ def create_list(list_type):
     el = etree.Element(list_types.get(list_type, 'ol'))
     # These are the supported list style types and their conversion to css.
     list_type_conversions = {
-        'decimal': 'decimal',
+        'decimal': DEFAULT_LIST_NUMBERING_STYLE,
         'decimalZero': 'decimal-leading-zero',
         'upperRoman': 'upper-roman',
         'lowerRoman': 'lower-roman',
         'upperLetter': 'upper-alpha',
         'lowerLetter': 'lower-alpha',
-        'ordinal': 'decimal',
-        'cardinalText': 'decimal',
-        'ordinalText': 'decimal',
+        'ordinal': DEFAULT_LIST_NUMBERING_STYLE,
+        'cardinalText': DEFAULT_LIST_NUMBERING_STYLE,
+        'ordinalText': DEFAULT_LIST_NUMBERING_STYLE,
     }
     if list_type != 'bullet':
         el.set(
             'data-list-type',
-            list_type_conversions.get(list_type, 'decimal'),
+            list_type_conversions.get(list_type, DEFAULT_LIST_NUMBERING_STYLE),
         )
     return el
 
@@ -890,8 +891,16 @@ def get_list_type(meta_data, numId, ilvl):
     """
     Return the list type. If numId or ilvl not in the numbering dict then
     default to returning decimal.
+
+    This function only cares about ordered lists, unordered lists get dealt
+    with elsewhere.
     """
-    return meta_data.numbering_dict.get(numId, {}).get(ilvl, 'decimal')
+    numbering_dict = meta_data.numbering_dict
+    if numId not in numbering_dict:
+        return DEFAULT_LIST_NUMBERING_STYLE
+    if ilvl not in numbering_dict[numId]:
+        return DEFAULT_LIST_NUMBERING_STYLE
+    return meta_data.numbering_dict[numId][ilvl]
 
 
 def get_list_data(li_nodes, meta_data):
