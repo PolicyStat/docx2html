@@ -12,7 +12,7 @@ from docx2html.core import (
     get_font_size,
     get_image_id,
     get_li_nodes,
-    get_list_type,
+    get_ordered_list_type,
     get_namespace,
     get_relationship_info,
     get_style_dict,
@@ -82,7 +82,7 @@ class SimpleListTestCase(_TranslationTestCase):
 
         # Show that for a valid combination of numId and ilvl that you get the
         # correct list type.
-        list_type = get_list_type(meta_data, numId, ilvl)
+        list_type = get_ordered_list_type(meta_data, numId, ilvl)
         self.assertEqual(list_type, 'lowerLetter')
 
     def test_get_list_type_invalid_numId(self):
@@ -90,7 +90,7 @@ class SimpleListTestCase(_TranslationTestCase):
         numId = '2'  # Not valid
         ilvl = 0
 
-        list_type = get_list_type(meta_data, numId, ilvl)
+        list_type = get_ordered_list_type(meta_data, numId, ilvl)
         self.assertEqual(list_type, DEFAULT_LIST_NUMBERING_STYLE)
 
     def test_get_list_type_invalid_ilvl(self):
@@ -98,7 +98,7 @@ class SimpleListTestCase(_TranslationTestCase):
         numId = '1'
         ilvl = 1  # Not valid
 
-        list_type = get_list_type(meta_data, numId, ilvl)
+        list_type = get_ordered_list_type(meta_data, numId, ilvl)
         self.assertEqual(list_type, DEFAULT_LIST_NUMBERING_STYLE)
 
     def test_get_list_type_invalid_numId_and_ilvl(self):
@@ -106,7 +106,7 @@ class SimpleListTestCase(_TranslationTestCase):
         numId = '2'  # Not valid
         ilvl = 1  # Not valid
 
-        list_type = get_list_type(meta_data, numId, ilvl)
+        list_type = get_ordered_list_type(meta_data, numId, ilvl)
         self.assertEqual(list_type, DEFAULT_LIST_NUMBERING_STYLE)
 
 
