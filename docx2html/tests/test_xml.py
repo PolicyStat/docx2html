@@ -5,6 +5,7 @@ from lxml import etree
 from copy import copy
 
 from docx2html.core import (
+    DEFAULT_LIST_NUMBERING_STYLE,
     _is_top_level_upper_roman,
     convert_image,
     create_html,
@@ -74,7 +75,7 @@ class SimpleListTestCase(_TranslationTestCase):
             [False, False, True],
         )
 
-    def test_get_list_type(self):
+    def test_get_list_type_valid(self):
         meta_data = self.get_meta_data()
         numId = '1'
         ilvl = 0
@@ -84,29 +85,29 @@ class SimpleListTestCase(_TranslationTestCase):
         list_type = get_list_type(meta_data, numId, ilvl)
         self.assertEqual(list_type, 'lowerLetter')
 
-        # Show that if the numId and/or the ilvl are invalid (not in the dict)
-        # that we still get a value (defaults to decimal)
-
-        # Invalid numId
+    def test_get_list_type_invalid_numId(self):
+        meta_data = self.get_meta_data()
         numId = '2'  # Not valid
         ilvl = 0
 
         list_type = get_list_type(meta_data, numId, ilvl)
-        self.assertEqual(list_type, 'decimal')
+        self.assertEqual(list_type, DEFAULT_LIST_NUMBERING_STYLE)
 
-        # Invalid ilvl
+    def test_get_list_type_invalid_ilvl(self):
+        meta_data = self.get_meta_data()
         numId = '1'
         ilvl = 1  # Not valid
 
         list_type = get_list_type(meta_data, numId, ilvl)
-        self.assertEqual(list_type, 'decimal')
+        self.assertEqual(list_type, DEFAULT_LIST_NUMBERING_STYLE)
 
-        # Both invalid
+    def test_get_list_type_invalid_numId_and_ilvl(self):
+        meta_data = self.get_meta_data()
         numId = '2'  # Not valid
         ilvl = 1  # Not valid
 
         list_type = get_list_type(meta_data, numId, ilvl)
-        self.assertEqual(list_type, 'decimal')
+        self.assertEqual(list_type, DEFAULT_LIST_NUMBERING_STYLE)
 
 
 class TableInListTestCase(_TranslationTestCase):
