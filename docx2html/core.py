@@ -895,6 +895,8 @@ def get_list_type(meta_data, numId, ilvl):
     This function only cares about ordered lists, unordered lists get dealt
     with elsewhere.
     """
+
+    # Early return if numId or ilvl are not valid
     numbering_dict = meta_data.numbering_dict
     if numId not in numbering_dict:
         return DEFAULT_LIST_NUMBERING_STYLE
