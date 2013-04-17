@@ -40,7 +40,7 @@ class DocxBuilder(object):
         elif isinstance(text, list):
             run_tags = text
         else:
-            raise AssertionError('text must be a string or a list')
+            run_tags = [self.r_tag(None)]
         template = env.get_template(templates['p'])
 
         kwargs = {

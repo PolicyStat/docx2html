@@ -4,5 +4,5 @@
 		<w:b/>
 		{% endif %}
 	</w:rPr>
-	{% include 't.xml' %}
+	{% if text %}{% include 't.xml' %}{% endif %}
 </w:r>

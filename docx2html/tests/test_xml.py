@@ -857,3 +857,17 @@ class InvalidIlvlOrderTestCase(_TranslationTestCase):
 
         xml = DXB.xml(body)
         return etree.fromstring(xml)
+
+
+class RTagWithNoText(_TranslationTestCase):
+    expected_output = '<html></html>'
+
+    def get_xml(self):
+        p_tag = DXB.p_tag(None)  # No text
+        run_tags = [p_tag]
+        # The bug is only present in a hyperlink
+        run_tags = [DXB.hyperlink_tag(r_id='rId0', run_tags=run_tags)]
+        body = DXB.p_tag(run_tags)
+
+        xml = DXB.xml(body)
+        return etree.fromstring(xml)
