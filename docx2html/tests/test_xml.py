@@ -827,3 +827,33 @@ class SeperateListsTestCase(_TranslationTestCase):
 
         xml = DXB.xml(lis)
         return etree.fromstring(xml)
+
+
+class InvalidIlvlOrderTestCase(_TranslationTestCase):
+    expected_output = '''
+    <html>
+        <ol data-list-type="decimal">
+            <li>AAA
+                <ol data-list-type="decimal">
+                    <li>BBB</li>
+                </ol>
+                <ol data-list-type="decimal">
+                    <li>CCC</li>
+                </ol>
+            </li>
+        </ol>
+    </html>
+    '''
+
+    def get_xml(self):
+        tags = [
+            DXB.li(text='AAA', ilvl=1, numId=1),
+            DXB.li(text='BBB', ilvl=3, numId=1),
+            DXB.li(text='CCC', ilvl=2, numId=1),
+        ]
+        body = ''
+        for el in tags:
+            body += el
+
+        xml = DXB.xml(body)
+        return etree.fromstring(xml)
