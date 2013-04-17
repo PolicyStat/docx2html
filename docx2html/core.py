@@ -1278,6 +1278,8 @@ def get_p_data(p, meta_data, is_td=False):
                 continue
             else:
                 t_el = r.find('%st' % w_namespace)
+                if t_el is None:
+                    continue
                 t_el.text = text
             el = r
 
