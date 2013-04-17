@@ -2,6 +2,10 @@
 Changelog
 =========
 
+* 0.2.1
+    * If a list had an inconsistency in the ilvls, the content for the
+      inconsistent ilvl would be lost. Now we roll that inconsistent list into
+      the root, no longer losing the content.
 * 0.2.0
     * If a list had a numId that was not stored in the numbering dict, then a
       key error would be thrown. Now if either the numId or the ilvl for a
