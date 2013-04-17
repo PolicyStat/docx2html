@@ -1013,11 +1013,18 @@ def get_list_data(li_nodes, meta_data):
         else:
             # In some instances the ilvl is not in the ol_dict, if that is the
             # case, create it here (not sure how this happens but it has
-            # before.)
-            ol_dict[ilvl] = create_list(list_type)
-            current_ilvl = ilvl
-            current_numId = numId
-            current_ol = ol_dict[ilvl]
+            # before.) Only do this if the current_ol is not the root_ol,
+            # otherwise etree will crash.
+
+            if current_ol is not root_ol:
+
+                # Merge the current_ol into the root_ol. _merge_lists is not
+                # equipped to handle this situation since the only way to get
+                # into this block of code is to have mangled ilvls.
+                root_ol[-1].append(current_ol)
+
+                # Reset the current_ol
+                current_ol = create_list(list_type)
 
         # Create the li element.
         visited_nodes.extend(list(li_node.iter()))
