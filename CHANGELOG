@@ -2,6 +2,9 @@
 Changelog
 =========
 
+* 0.2.2
+    * There was a bug with hyperlinks that were missing text. The document
+      would fail to convert. This issue has been fixed.
 * 0.2.1
     * If a list had an inconsistency in the ilvls, the content for the
       inconsistent ilvl would be lost. Now we roll that inconsistent list into
