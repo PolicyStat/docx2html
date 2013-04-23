@@ -676,6 +676,27 @@ class HyperlinkVanillaTestCase(_TranslationTestCase):
         return etree.fromstring(xml)
 
 
+class HyperlinkWithBreakTestCase(_TranslationTestCase):
+    relationship_dict = {
+        'rId0': 'www.google.com',
+    }
+
+    expected_output = '''
+    <html>
+        <p><a href="www.google.com">link</a></p>
+    </html>
+    '''
+
+    def get_xml(self):
+        run_tags = []
+        run_tags.append(DXB.r_tag('link'))
+        run_tags.append(DXB.r_tag(None, is_break=True))
+        run_tags = [DXB.hyperlink_tag(r_id='rId0', run_tags=run_tags)]
+        body = DXB.p_tag(run_tags)
+        xml = DXB.xml(body)
+        return etree.fromstring(xml)
+
+
 class MissingFontInfoTestCase(_TranslationTestCase):
     styles_dict = {
         'BodyText': {
