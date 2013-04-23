@@ -49,10 +49,10 @@ class DocxBuilder(object):
         return template.render(**kwargs)
 
     @classmethod
-    def r_tag(self, text, is_bold=False, is_break=False):
+    def r_tag(self, text, is_bold=False, include_linebreak=False):
         template = env.get_template(templates['r'])
         kwargs = {
-            'break': is_break,
+            'include_linebreak': include_linebreak,
             'text': text,
             'is_bold': is_bold,
         }

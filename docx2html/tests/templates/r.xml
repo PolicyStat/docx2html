@@ -4,6 +4,6 @@
 		<w:b/>
 		{% endif %}
 	</w:rPr>
-	{% if break %}<w:br/>{% endif %}
+	{% if include_linebreak %}<w:br/>{% endif %}
 	{% if text %}{% include 't.xml' %}{% endif %}
 </w:r>
