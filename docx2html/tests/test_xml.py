@@ -690,7 +690,7 @@ class HyperlinkWithBreakTestCase(_TranslationTestCase):
     def get_xml(self):
         run_tags = []
         run_tags.append(DXB.r_tag('link'))
-        run_tags.append(DXB.r_tag(None, is_break=True))
+        run_tags.append(DXB.r_tag(None, include_linebreak=True))
         run_tags = [DXB.hyperlink_tag(r_id='rId0', run_tags=run_tags)]
         body = DXB.p_tag(run_tags)
         xml = DXB.xml(body)
