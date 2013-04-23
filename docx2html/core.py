@@ -1159,7 +1159,7 @@ def get_table_data(table, meta_data):
 
 @ensure_tag(['t'])
 def handle_t_tag(
-        t, parent, hyperlink_id, remove_bold, remove_italics, meta_data):
+        t, parent, remove_bold, remove_italics, meta_data):
     """
     Generate the string data that for this particular t tag.
     """
@@ -1170,12 +1170,7 @@ def handle_t_tag(
     # that is not valid XML.
     # cgi will replace things like & < > with &amp; &lt; &gt;
     text = cgi.escape(t.text)
-    if hyperlink_id is not None:
-        # The relationship_id is the href
-        if hyperlink_id in meta_data.relationship_dict:
-            href = meta_data.relationship_dict[hyperlink_id]
-            # Do not do any styling on hyperlinks
-            return '<a href="%s">%s</a>' % (href, text)
+
     # Wrap the text with any modifiers it might have (bold, italics or
     # underline)
     el_is_bold = not remove_bold and (
@@ -1263,7 +1258,17 @@ def get_p_data(p, meta_data, is_td=False):
             r = None
             for r in el.xpath('.//w:r', namespaces=el.nsmap):
                 for child in get_raw_data(r):
-                    text += handle_t_tag(child, r, None, True, True, meta_data)
+                    if child.tag == '%st' % w_namespace:
+                        text += handle_t_tag(
+                            child,
+                            r,
+                            remove_bold=True,
+                            remove_italics=True,
+                            meta_data=meta_data,
+                        )
+                    elif child.tag == '%sbr' % w_namespace:
+                        # If there is a break in a hyperlink, ignore it
+                        continue
             if r is None:
                 if has_text(el):
                     # If there is text in this hyperlink we need to raise an
@@ -1278,18 +1283,23 @@ def get_p_data(p, meta_data, is_td=False):
                 continue
             else:
                 t_el = r.find('%st' % w_namespace)
-                if t_el is None:
-                    continue
-                t_el.text = text
-            el = r
+                if t_el is not None:
+                    t_el.text = text
+            if hyperlink_id in meta_data.relationship_dict:
+                href = meta_data.relationship_dict[hyperlink_id]
+                # Do not do any styling on hyperlinks
+                p_text += '<a href="%s">%s</a>' % (href, text)
+                continue
 
         # t tags hold all the text content.
+        if el.tag == '%shyperlink' % w_namespace:
+            # This has been dealt with above
+            continue
         for child in get_raw_data(el):
             if child.tag == '%st' % w_namespace:
                 p_text += handle_t_tag(
                     child,
                     el,
-                    hyperlink_id,
                     remove_bold,
                     remove_italics,
                     meta_data,
