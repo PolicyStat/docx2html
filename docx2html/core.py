@@ -1269,7 +1269,6 @@ def get_text_run_content(el, meta_data, remove_bold, remove_italics):
 
 
 @ensure_tag(['p', 'ins', 'smartTag', 'hyperlink'])
-# TODO Rename me to something that is not p tag specific
 def get_element_content(
         p,
         meta_data,
