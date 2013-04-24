@@ -290,7 +290,7 @@ def is_last_li(li, meta_data, current_numId):
 
 
 @ensure_tag(['p'])
-def get_li_nodes(li, meta_data):
+def get_single_list_nodes_data(li, meta_data):
     """
     Find consecutive li tags that have content that have the same list id.
     """
@@ -559,7 +559,7 @@ def is_title(p):
 
 
 @ensure_tag(['r'])
-def get_raw_data(r):
+def get_text_run_content_data(r):
     """
     It turns out that r tags can contain both t tags and drawing tags. Since we
     need both, this function will return them in the order in which they are
@@ -905,7 +905,7 @@ def get_ordered_list_type(meta_data, numId, ilvl):
     return meta_data.numbering_dict[numId][ilvl]
 
 
-def get_list_data(li_nodes, meta_data):
+def build_list(li_nodes, meta_data):
     """
     Build the list structure and return the root list
     """
@@ -933,10 +933,10 @@ def get_list_data(li_nodes, meta_data):
     def _build_non_li_content(el, meta_data):
         w_namespace = get_namespace(el, 'w')
         if el.tag == '%stbl' % w_namespace:
-            new_el, visited_nodes = get_table_data(el, meta_data)
+            new_el, visited_nodes = build_table(el, meta_data)
             return etree.tostring(new_el), visited_nodes
         elif el.tag == '%sp' % w_namespace:
-            return get_p_data(el, meta_data), [el]
+            return get_element_content(el, meta_data), [el]
         if has_text(el):
             raise UnintendedTag('Did not expect %s' % el.tag)
 
@@ -974,7 +974,7 @@ def get_list_data(li_nodes, meta_data):
             list_contents = []
             current_ol.append(li_el)
         # Get the data needed to build the current list item
-        list_contents.append(get_p_data(
+        list_contents.append(get_element_content(
             li_node,
             meta_data,
         ))
@@ -1049,7 +1049,7 @@ def get_list_data(li_nodes, meta_data):
 
 
 @ensure_tag(['tr'])
-def get_tr_data(tr, meta_data, row_spans):
+def build_tr(tr, meta_data, row_spans):
     """
     This will return a single tr element, with all tds already populated.
     """
@@ -1084,15 +1084,18 @@ def get_tr_data(tr, meta_data, row_spans):
                 if is_li(td_content, meta_data):
                     # If it is a list, create the list and update
                     # visited_nodes.
-                    li_nodes = get_li_nodes(td_content, meta_data)
-                    list_el, list_visited_nodes = get_list_data(
+                    li_nodes = get_single_list_nodes_data(
+                        td_content,
+                        meta_data,
+                    )
+                    list_el, list_visited_nodes = build_list(
                         li_nodes,
                         meta_data,
                     )
                     visited_nodes.extend(list_visited_nodes)
                     texts.append(etree.tostring(list_el))
                 elif td_content.tag == '%stbl' % w_namespace:
-                    table_el, table_visited_nodes = get_table_data(
+                    table_el, table_visited_nodes = build_table(
                         td_content,
                         meta_data,
                     )
@@ -1103,7 +1106,7 @@ def get_tr_data(tr, meta_data, row_spans):
                     visited_nodes.append(td_content)
                     continue
                 else:
-                    text = get_p_data(
+                    text = get_element_content(
                         td_content,
                         meta_data,
                         is_td=True,
@@ -1131,7 +1134,7 @@ def get_tr_data(tr, meta_data, row_spans):
 
 
 @ensure_tag(['tbl'])
-def get_table_data(table, meta_data):
+def build_table(table, meta_data):
     """
     This returns a table object with all rows and cells correctly populated.
     """
@@ -1145,7 +1148,7 @@ def get_table_data(table, meta_data):
     for el in table:
         if el.tag == '%str' % w_namespace:
             # Create the tr element.
-            tr_el = get_tr_data(
+            tr_el = build_tr(
                 el,
                 meta_data,
                 row_spans,
@@ -1158,7 +1161,7 @@ def get_table_data(table, meta_data):
 
 
 @ensure_tag(['t'])
-def handle_t_tag(
+def get_t_tag_content(
         t, parent, remove_bold, remove_italics, meta_data):
     """
     Generate the string data that for this particular t tag.
@@ -1417,7 +1420,7 @@ def create_html(tree, meta_data):
             continue
         header_value = is_header(el, meta_data)
         if is_header(el, meta_data):
-            p_text = get_p_data(el, meta_data)
+            p_text = get_element_content(el, meta_data)
             if p_text == '':
                 continue
             new_html.append(
@@ -1433,15 +1436,15 @@ def create_html(tree, meta_data):
                 continue
             if is_li(el, meta_data):
                 # Parse out the needed info from the node.
-                li_nodes = get_li_nodes(el, meta_data)
-                new_el, list_visited_nodes = get_list_data(
+                li_nodes = get_single_list_nodes_data(el, meta_data)
+                new_el, list_visited_nodes = build_list(
                     li_nodes,
                     meta_data,
                 )
                 visited_nodes.extend(list_visited_nodes)
             # Handle generic p tag here.
             else:
-                p_text = get_p_data(el, meta_data)
+                p_text = get_element_content(el, meta_data)
                 # If there is not text do not add an empty tag.
                 if p_text == '':
                     continue
@@ -1450,7 +1453,7 @@ def create_html(tree, meta_data):
             new_html.append(new_el)
 
         elif el.tag == '%stbl' % w_namespace:
-            table_el, table_visited_nodes = get_table_data(
+            table_el, table_visited_nodes = build_table(
                 el,
                 meta_data,
             )
