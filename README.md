@@ -86,3 +86,10 @@ Note: This documentation sucks, so you might need to read the source.
         return 'file://%s' % destination
 
     html = convert('path/to/docx/file', image_handler=handle_image)
+
+Naming Conventions
+------------------
+
+There are two main naming conventions in the source for docx2html there are
+*build* functions, which will return an etree element that represents HTML. And
+there are *get_contnet* functions which return string representations of HTML.
