@@ -1193,8 +1193,90 @@ def _get_image_size_from_image(target):
     return image.size
 
 
-@ensure_tag(['p'])
-def get_p_data(p, meta_data, is_td=False):
+def build_hyperlink(el, meta_data):
+    # If we have a hyperlink we need to get relationship_id
+    r_namespace = get_namespace(el, 'r')
+    hyperlink_id = el.get('%sid' % r_namespace)
+
+    # Once we have the hyperlink_id then we need to replace the
+    # hyperlink tag with its child run tags.
+    content = get_element_content(
+        el,
+        meta_data,
+        remove_bold=True,
+        remove_italics=True,
+    )
+    if not content:
+        return ''
+    if hyperlink_id in meta_data.relationship_dict:
+        href = meta_data.relationship_dict[hyperlink_id]
+        # Do not do any styling on hyperlinks
+        return '<a href="%s">%s</a>' % (href, content)
+    return ''
+
+
+def build_image(el, meta_data):
+    image_id = get_image_id(el)
+    if image_id not in meta_data.relationship_dict:
+        # This image does not have an image_id
+        return ''
+    src = meta_data.image_handler(
+        image_id,
+        meta_data.relationship_dict,
+    )
+    if image_id in meta_data.image_sizes:
+        width, height = meta_data.image_sizes[image_id]
+    else:
+        target = meta_data.relationship_dict[image_id]
+        width, height = _get_image_size_from_image(target)
+    # Make sure the width and height are not zero
+    if all((width, height)):
+        return '<img src="%s" height="%d" width="%d" />' % (
+            src,
+            height,
+            width,
+        )
+    else:
+        return '<img src="%s" />' % src
+    return ''
+
+
+def get_text_run_content(el, meta_data, remove_bold, remove_italics):
+    w_namespace = get_namespace(el, 'w')
+    text_output = ''
+    for child in get_text_run_content_data(el):
+        if child.tag == '%st' % w_namespace:
+            text_output += get_t_tag_content(
+                child,
+                el,
+                remove_bold,
+                remove_italics,
+                meta_data,
+            )
+        elif child.tag == '%sbr' % w_namespace:
+            text_output += '<br />'
+        elif child.tag in (
+                '%spict' % w_namespace,
+                '%sdrawing' % w_namespace,
+        ):
+            text_output += build_image(child, meta_data)
+        else:
+            raise SyntaxNotSupported(
+                '"%s" is not a supported content-containing '
+                'text run child.' % child.tag
+            )
+    return text_output
+
+
+@ensure_tag(['p', 'ins', 'smartTag', 'hyperlink'])
+# TODO Rename me to something that is not p tag specific
+def get_element_content(
+        p,
+        meta_data,
+        is_td=False,
+        remove_italics=False,
+        remove_bold=False,
+):
     """
     P tags are made up of several runs (r tags) of text. This function takes a
     p tag and constructs the text that should be part of the p tag.
@@ -1202,8 +1284,6 @@ def get_p_data(p, meta_data, is_td=False):
     image_handler should be a callable that returns the desired ``src``
     attribute for a given image.
     """
-    remove_italics = False
-    remove_bold = False
 
     # Only remove bold or italics if this tag is an h tag.
     # Td elements have the same look and feel as p/h elements. Right now we are
@@ -1217,121 +1297,45 @@ def get_p_data(p, meta_data, is_td=False):
     w_namespace = get_namespace(p, 'w')
     if len(p) == 0:
         return ''
-    child = p[0]
-    tags = (
+    # Only these tags contain text that we care about (eg. We don't care about
+    # delete tags)
+    content_tags = (
         '%sr' % w_namespace,
         '%shyperlink' % w_namespace,
         '%sins' % w_namespace,
         '%ssmartTag' % w_namespace,
     )
-    elements = []
-    # Get the tags that are r tags or hyperlink tags
-    while True:
+    elements_with_content = []
+    for child in p:
         if child is None:
             break
-        if child.tag in tags:
-            # By default nothing needs to be forced bold.
-            elements.append(child)
-        child = child.getnext()
+        if child.tag in content_tags:
+            elements_with_content.append(child)
 
-    # Loop through each of the r and hyperlink tags
-    for el in elements:
-        hyperlink_id = None
+    # Gather the content from all of the children
+    for el in elements_with_content:
         # Hyperlinks and insert tags need to be handled differently than
-        # normals runs.
+        # r and smart tags.
         if el.tag in ('%sins' % w_namespace, '%ssmartTag' % w_namespace):
-            # Insert tags can have an arbitrary number of r tags in them. Find
-            # each and insert them into the elements list as the next elements
-            # in reverse order.
-            el_index = elements.index(el)
-            for r in reversed(el.xpath('.//w:r', namespaces=el.nsmap)):
-                # Be very careful when editing around this. This could cause
-                # problems if not understood. We are intentionally inserting
-                # new elements into the currently looping list.
-                elements.insert(el_index + 1, r)
-            continue
+            p_text += get_element_content(
+                el,
+                meta_data,
+                remove_bold=remove_bold,
+                remove_italics=remove_italics,
+            )
         elif el.tag == '%shyperlink' % w_namespace:
-            # If we have a hyperlink we need to get relationship_id
-            r_namespace = get_namespace(el, 'r')
-            hyperlink_id = el.get('%sid' % r_namespace)
-
-            # Once we have the hyperlink_id then we need to replace the
-            # hyperlink tag with its child run tags.
-            text = ''
-            r = None
-            for r in el.xpath('.//w:r', namespaces=el.nsmap):
-                for child in get_raw_data(r):
-                    if child.tag == '%st' % w_namespace:
-                        text += handle_t_tag(
-                            child,
-                            r,
-                            remove_bold=True,
-                            remove_italics=True,
-                            meta_data=meta_data,
-                        )
-                    elif child.tag == '%sbr' % w_namespace:
-                        # If there is a break in a hyperlink, ignore it
-                        continue
-            if r is None:
-                if has_text(el):
-                    # If there is text in this hyperlink we need to raise an
-                    # exception so that we don't lose content.
-                    raise SyntaxNotSupported(
-                        'Hyperlink with text outside run tags not supported.',
-                    )
-                # It is very likely that this was a hyperlink tag that had its
-                # content removed, office does not do a very good job at
-                # cleaning up old tags, as such this tag has no content and
-                # should be ignored.
-                continue
-            else:
-                t_el = r.find('%st' % w_namespace)
-                if t_el is not None:
-                    t_el.text = text
-            if hyperlink_id in meta_data.relationship_dict:
-                href = meta_data.relationship_dict[hyperlink_id]
-                # Do not do any styling on hyperlinks
-                p_text += '<a href="%s">%s</a>' % (href, text)
-                continue
-
-        # t tags hold all the text content.
-        if el.tag == '%shyperlink' % w_namespace:
-            # This has been dealt with above
-            continue
-        for child in get_raw_data(el):
-            if child.tag == '%st' % w_namespace:
-                p_text += handle_t_tag(
-                    child,
-                    el,
-                    remove_bold,
-                    remove_italics,
-                    meta_data,
-                )
-            elif child.tag == '%sbr' % w_namespace:
-                p_text += '<br />'
-            else:  # We have an image
-                image_id = get_image_id(child)
-                if image_id not in meta_data.relationship_dict:
-                    # This image does not have an image_id
-                    continue
-                src = meta_data.image_handler(
-                    image_id,
-                    meta_data.relationship_dict,
-                )
-                if image_id in meta_data.image_sizes:
-                    width, height = meta_data.image_sizes[image_id]
-                else:
-                    target = meta_data.relationship_dict[image_id]
-                    width, height = _get_image_size_from_image(target)
-                # Make sure the width and height are not zero
-                if all((width, height)):
-                    p_text += '<img src="%s" height="%d" width="%d" />' % (
-                        src,
-                        height,
-                        width,
-                    )
-                else:
-                    p_text += '<img src="%s" />' % src
+            p_text += build_hyperlink(el, meta_data)
+        elif el.tag == '%sr' % w_namespace:
+            p_text += get_text_run_content(
+                el,
+                meta_data,
+                remove_bold=remove_bold,
+                remove_italics=remove_italics,
+            )
+        else:
+            raise SyntaxNotSupported(
+                'Content element "%s" not handled.' % el.tag
+            )
 
     # This function does not return a p tag since other tag types need this as
     # well (td, li).
