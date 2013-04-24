@@ -92,4 +92,4 @@ Naming Conventions
 
 There are two main naming conventions in the source for docx2html there are
 *build* functions, which will return an etree element that represents HTML. And
-there are *get_contnet* functions which return string representations of HTML.
+there are *get_content* functions which return string representations of HTML.
