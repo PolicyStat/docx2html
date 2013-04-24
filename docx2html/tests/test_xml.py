@@ -11,7 +11,7 @@ from docx2html.core import (
     create_html,
     get_font_size,
     get_image_id,
-    get_li_nodes,
+    get_single_list_nodes_data,
     get_ordered_list_type,
     get_namespace,
     get_relationship_info,
@@ -62,7 +62,7 @@ class SimpleListTestCase(_TranslationTestCase):
         w_namespace = get_namespace(tree, 'w')
         first_p_tag = tree.find('%sp' % w_namespace)
 
-        li_data = get_li_nodes(first_p_tag, meta_data)
+        li_data = get_single_list_nodes_data(first_p_tag, meta_data)
         assert len(list(li_data)) == 3
 
     def test_is_last_li(self):
@@ -159,7 +159,7 @@ class TableInListTestCase(_TranslationTestCase):
         first_p_tag = tree.find('%sp' % w_namespace)
 
         # Show that list nesting deals with the table nesting
-        li_data = get_li_nodes(first_p_tag, meta_data)
+        li_data = get_single_list_nodes_data(first_p_tag, meta_data)
         assert len(list(li_data)) == 3
 
     def test_is_last_li(self):
@@ -671,6 +671,27 @@ class HyperlinkVanillaTestCase(_TranslationTestCase):
         run_tags.append(DXB.r_tag('link', is_bold=False))
         run_tags = [DXB.hyperlink_tag(r_id='rId0', run_tags=run_tags)]
         run_tags.append(DXB.r_tag('.', is_bold=False))
+        body = DXB.p_tag(run_tags)
+        xml = DXB.xml(body)
+        return etree.fromstring(xml)
+
+
+class HyperlinkWithBreakTestCase(_TranslationTestCase):
+    relationship_dict = {
+        'rId0': 'www.google.com',
+    }
+
+    expected_output = '''
+    <html>
+        <p><a href="www.google.com">link<br /></a></p>
+    </html>
+    '''
+
+    def get_xml(self):
+        run_tags = []
+        run_tags.append(DXB.r_tag('link'))
+        run_tags.append(DXB.r_tag(None, include_linebreak=True))
+        run_tags = [DXB.hyperlink_tag(r_id='rId0', run_tags=run_tags)]
         body = DXB.p_tag(run_tags)
         xml = DXB.xml(body)
         return etree.fromstring(xml)
